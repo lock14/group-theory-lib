@@ -1,2 +1,3 @@
 # group-theory-lib
-A java library that supplies group theory interfaces
+
+This a a library exploring the use of group theory interfaces in java.
