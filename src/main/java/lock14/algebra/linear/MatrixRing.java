@@ -8,25 +8,13 @@ import lock14.algebra.structure.Ring;
  *
  * @param <T> the scalar entry type
  */
-public final class MatrixRing<T> implements Ring<SquareMatrix<T>> {
+public record MatrixRing<T>(int dimension, Ring<T> entryRing) implements Ring<SquareMatrix<T>> {
 
-    private final int dimension;
-    private final Ring<T> entryRing;
-
-    public MatrixRing(int dimension, Ring<T> entryRing) {
+    public MatrixRing {
         if (dimension <= 0) {
             throw new IllegalArgumentException("Matrix ring dimension must be positive: " + dimension);
         }
-        this.dimension = dimension;
-        this.entryRing = Objects.requireNonNull(entryRing, "entryRing cannot be null");
-    }
-
-    public int dimension() {
-        return dimension;
-    }
-
-    public Ring<T> entryRing() {
-        return entryRing;
+        Objects.requireNonNull(entryRing, "entryRing cannot be null");
     }
 
     @Override

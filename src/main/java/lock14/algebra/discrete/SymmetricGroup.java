@@ -6,19 +6,12 @@ import lock14.algebra.structure.Group;
 /**
  * The Symmetric Group S_n on n elements.
  */
-public final class SymmetricGroup implements Group<Permutation> {
+public record SymmetricGroup(int degree) implements Group<Permutation> {
 
-    private final int degree;
-
-    public SymmetricGroup(int degree) {
+    public SymmetricGroup {
         if (degree <= 0) {
             throw new IllegalArgumentException("Degree must be positive: " + degree);
         }
-        this.degree = degree;
-    }
-
-    public int degree() {
-        return degree;
     }
 
     @Override

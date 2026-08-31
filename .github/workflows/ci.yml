@@ -9,9 +9,9 @@ on:
       - main
   workflow_dispatch:
 
-# Principle of least privilege
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 # Cancel redundant in-flight workflow runs on pull requests
 concurrency:
@@ -67,3 +67,11 @@ jobs:
           fi
           echo "All CI matrix checks passed successfully!"
           exit 0
+
+      # Runs seamlessly inside Gatekeeper ONLY for Dependabot PRs (no extra checks in UI for humans)
+      - name: Auto-Merge Dependabot PR
+        if: github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

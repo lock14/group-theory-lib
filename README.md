@@ -14,12 +14,13 @@ A modern, type-safe, high-performance abstract algebra and linear algebra librar
 - **Typeclass / Structure Layer (`lock14.algebra.structure`):** First-class algebraic structures (`Magma`, `Semigroup`, `Monoid`, `Group`, `AbelianGroup`, `Semiring`, `Ring`, `CommutativeRing`, `IntegralDomain`, `EuclideanDomain`, `Field`, `VectorSpace`, `Module`).
 - **Fluent Element Interfaces (`lock14.algebra.element`):** Self-typed interfaces (`GroupElement`, `RingElement`, `FieldElement`) enabling concise and expressive chaining (`a.add(b).multiply(c)`).
 
-### 2. Modern Java 25 Platform Capabilities
+### 2. Modern Java 25 & Algebraic Data Types (ADT)
+- **Algebraic Data Types (ADTs):** Core entities are modeled via **Sum Types** (`sealed interface Matrix<T> permits DenseMatrix, SquareMatrix`) and **Product Types** (immutable `record`s: `Complex`, `Rational`, `ModuloInteger`, `Quaternion`, `Permutation`, `Polynomial`, `Vector`, `DenseMatrix`, `SquareMatrix`).
+- **Exhaustive Pattern Matching & Deconstruction:** Compiler-checked `switch` expressions and record pattern deconstruction without downcasts.
+- **Project Valhalla (JEP 401) Preparedness:** All mathematical elements have identity-free, deeply immutable value semantics, ready for zero-cost unboxed memory flattening as `value record`s.
 - **Stream Gatherers (`java.util.stream.Gatherer`):** Built-in rolling prefix scans (`Gatherers.scan()`) and zero-allocation matrix row windowing (`Gatherers.windowFixed()`).
 - **Foreign Function & Memory API (FFM):** `NativeDoubleMatrix` with `MemorySegment` and `Arena` for off-heap, zero-GC matrix allocations.
 - **Scoped Values (`ScopedValue`):** Ambient algebraic contexts (`AlgebraicContext.MODULUS`, `EPSILON`) for dynamic thread-bound modular arithmetic.
-- **Immutable Value Records:** `Complex`, `Rational`, `ModuloInteger`, `Quaternion`, `Permutation`, and `Polynomial`.
-- **Flexible Constructor Bodies:** Pre-constructor validation and normalization prior to superclass initialization.
 
 ### 3. Concrete Algebraic Domains
 - **$\mathbb{Q}$ (Rational Numbers):** Arbitrary-precision exact arithmetic with automatic GCD reduction and sign normalization.
@@ -79,6 +80,22 @@ SquareMatrix<Rational> sq = SquareMatrix.of(field, new Rational[][]{
 SquareMatrix<Rational> inv = sq.inverse(); // [-2, 1; 3/2, -1/2]
 ```
 
+### Exhaustive Pattern Matching & Deconstruction
+```java
+// Pattern match on sealed Matrix ADT without casting
+public static String summarize(Matrix<?> matrix) {
+    return switch (matrix) {
+        case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension() + " det=" + sm.determinant();
+        case DenseMatrix<?> dm  -> "Rectangular " + dm.rows() + "x" + dm.cols();
+    };
+}
+
+// Record deconstruction pattern matching
+if (matrix instanceof SquareMatrix<Rational>(int dim, var ring, var data)) {
+    System.out.println("Dimension: " + dim + " over " + ring);
+}
+```
+
 ### Monoid Stream Gatherers & Prefix Scans
 ```java
 Monoid<Complex> additive = Complex.field().asAdditiveGroup();
@@ -95,6 +112,7 @@ List<Complex> prefixSums = terms.stream()
 ## 🧪 Running the Verification Suite
 
 ```bash
-mvn clean test
+# Using the self-bootstrapping Maven Wrapper
+./mvnw clean test
 ```
 All tests execute under JUnit 5 Jupiter and jqwik with `--enable-preview` on JDK 25 LTS.

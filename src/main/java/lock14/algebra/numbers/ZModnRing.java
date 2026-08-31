@@ -7,24 +7,17 @@ import lock14.algebra.structure.CommutativeRing;
 /**
  * The Commutative Ring of Integers Modulo n (Z / nZ).
  */
-public class ZModnRing implements CommutativeRing<ModuloInteger> {
+public record ZModnRing(BigInteger modulus) implements CommutativeRing<ModuloInteger> {
 
-    private final BigInteger modulus;
-
-    public ZModnRing(BigInteger modulus) {
+    public ZModnRing {
         Objects.requireNonNull(modulus, "modulus cannot be null");
         if (modulus.signum() <= 0) {
             throw new IllegalArgumentException("Modulus must be positive: " + modulus);
         }
-        this.modulus = modulus;
     }
 
     public ZModnRing(long modulus) {
         this(BigInteger.valueOf(modulus));
-    }
-
-    public BigInteger modulus() {
-        return modulus;
     }
 
     public ModuloInteger element(long value) {
