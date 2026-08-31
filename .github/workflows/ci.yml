@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Principle of least privilege
+permissions:
+  contents: read
+
+# Cancel redundant in-flight workflow runs on pull requests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build-and-test:
+    name: Test (Java ${{ matrix.java-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java-version: ['25']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: ${{ matrix.java-version }}
+          cache: 'maven'
+
+      - name: Run Maven Test Suite
+        run: mvn --batch-mode --no-transfer-progress clean test
+
+  # =========================================================================
+  # Gatekeeper Pattern:
+  # Aggregates all matrix jobs into a single required status check for branch
+  # protection rules. Adding or removing OS/JDK matrix combinations will not
+  # break branch protection settings.
+  # =========================================================================
+  gatekeeper:
+    name: CI Gatekeeper
+    if: always()
+    needs:
+      - build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate CI matrix status
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::One or more prerequisite CI matrix jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All CI matrix checks passed successfully!"
+          exit 0
