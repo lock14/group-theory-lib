@@ -65,7 +65,7 @@
       </plugin>
       <!--
         TODO: Re-enable JaCoCo once version 0.8.13+ is published supporting Java 25 bytecode (class file major version 69).
-        When enabling, update surefire argLine above to: <argLine>@{argLine} --enable-preview</argLine>
+        When enabling, update surefire argLine above to include @{argLine}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
