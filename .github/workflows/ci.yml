@@ -39,8 +39,12 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
+      - name: Make Maven Wrapper executable
+        if: runner.os != 'Windows'
+        run: chmod +x ./mvnw
+
       - name: Run Maven Test Suite
-        run: mvn --batch-mode --no-transfer-progress clean test
+        run: ./mvnw --batch-mode --no-transfer-progress clean test
 
   # =========================================================================
   # Gatekeeper Pattern:
