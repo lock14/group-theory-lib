@@ -1,118 +1,97 @@
-# Abstract Algebra & Linear Algebra Library (Java 25 LTS)
+# 📐 group-theory-lib
 
 [![CI](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml)
 [![Java 25](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A modern, type-safe, high-performance abstract algebra and linear algebra library for the JVM, engineered with **Java 25 LTS**.
+A modern, type-safe, high-performance abstract algebra and linear algebra library for the JVM, engineered with **Java 25 LTS** and **Algebraic Data Types (ADTs)**.
 
 ---
 
-## 🌟 Key Features & Architectural Highlights
+## ⚡ Highlights
 
-### 1. Dual-Layer Algebraic Architecture
-- **Typeclass / Structure Layer (`lock14.algebra.structure`):** First-class algebraic structures (`Magma`, `Semigroup`, `Monoid`, `Group`, `AbelianGroup`, `Semiring`, `Ring`, `CommutativeRing`, `IntegralDomain`, `EuclideanDomain`, `Field`, `VectorSpace`, `Module`).
-- **Fluent Element Interfaces (`lock14.algebra.element`):** Self-typed interfaces (`GroupElement`, `RingElement`, `FieldElement`) enabling concise and expressive chaining (`a.add(b).multiply(c)`).
+* **Dual-Layer Architecture:** Pure functional typeclasses in `lock14.algebra.structure` decoupled from ergonomic fluent elements in `lock14.algebra.element` (`a.add(b).multiply(c)`).
+* **Algebraic Data Types & Valhalla Ready:** Sealed interfaces (`Matrix<T>`) and immutable value records with exhaustive pattern matching and zero-identity semantics.
+* **Modern Java 25 Idioms:** Stream Gatherers (prefix scans & windowing), Scoped Values for ambient contexts, and Foreign Function & Memory (FFM) off-heap allocations.
+* **Axiomatically Verified:** 110 property-based and unit test suites running 100,000+ randomized trials with `jqwik`.
 
-### 2. Modern Java 25 & Algebraic Data Types (ADT)
-- **Algebraic Data Types (ADTs):** Core entities are modeled via **Sum Types** (`sealed interface Matrix<T> permits DenseMatrix, SquareMatrix`) and **Product Types** (immutable `record`s: `Complex`, `Rational`, `ModuloInteger`, `Quaternion`, `Permutation`, `Polynomial`, `Vector`, `DenseMatrix`, `SquareMatrix`).
-- **Exhaustive Pattern Matching & Deconstruction:** Compiler-checked `switch` expressions and record pattern deconstruction without downcasts.
-- **Project Valhalla (JEP 401) Preparedness:** All mathematical elements have identity-free, deeply immutable value semantics, ready for zero-cost unboxed memory flattening as `value record`s.
-- **Stream Gatherers (`java.util.stream.Gatherer`):** Built-in rolling prefix scans (`Gatherers.scan()`) and zero-allocation matrix row windowing (`Gatherers.windowFixed()`).
-- **Foreign Function & Memory API (FFM):** `NativeDoubleMatrix` with `MemorySegment` and `Arena` for off-heap, zero-GC matrix allocations.
-- **Scoped Values (`ScopedValue`):** Ambient algebraic contexts (`AlgebraicContext.MODULUS`, `EPSILON`) for dynamic thread-bound modular arithmetic.
+---
 
-### 3. Concrete Algebraic Domains
-- **$\mathbb{Q}$ (Rational Numbers):** Arbitrary-precision exact arithmetic with automatic GCD reduction and sign normalization.
-- **$\mathbb{C}$ (Complex Numbers):** Double-precision complex arithmetic with polar representation, Euler's identity, and Smith's scaling algorithm to prevent overflow.
-- **$\mathbb{Z}/n\mathbb{Z}$ (Modular Arithmetic):** Quotient ring with coprime modular inversions ($\mathbb{Z}/p\mathbb{Z}$ field).
-- **$\mathbb{H}$ (Quaternions):** Hamilton's skew-field / division ring.
-- **$R[x]$ (Polynomial Rings):** Univariate polynomials over arbitrary rings with Horner's evaluation and symbolic derivatives.
-- **$S_n$ (Symmetric Groups):** Finite permutation groups with composition, inverse, parity/sign homomorphism, and disjoint cycle decomposition.
-- **$M_{m\times n}(R)$ (Matrix Engine):** Flat 1D row-major contiguous memory layout, cache-friendly $i$-$k$-$j$ multiplication, trace, transpose, determinant, and Gauss-Jordan inverse.
+## 📦 Concrete Algebraic Domains
 
-### 4. Rigorous Property-Based Verification
-- **Axiomatic Law Suites:** Automated jqwik property-based tests verifying algebraic axioms (associativity, identity, inverse, distributivity, commutativity) over 100,000+ randomized trials.
+| Domain | Record Type | Algebraic Structure | Key Capabilities |
+| :--- | :--- | :--- | :--- |
+| **$\mathbb{Q}$ (Rationals)** | `Rational` | `Field<Rational>` | Exact fraction arithmetic with automatic GCD reduction & sign normalization |
+| **$\mathbb{C}$ (Complex)** | `Complex` | `Field<Complex>` | Polar forms, Euler's identity, and Smith's scaling algorithm |
+| **$\mathbb{Z}/n\mathbb{Z}$ (Modular)** | `ModuloInteger` | `CommutativeRing` / `Field` | Ring $\mathbb{Z}/n\mathbb{Z}$, Galois field $\mathbb{F}_p$, ambient `ScopedValue` modulus |
+| **$\mathbb{H}$ (Quaternions)** | `Quaternion` | Division Ring | Hamilton 4D spatial rotations & non-commutative algebra |
+| **$R[x]$ (Polynomials)** | `Polynomial<T>` | `CommutativeRing` | Horner's evaluation, symbolic derivatives over arbitrary rings |
+| **$S_n$ (Symmetric)** | `Permutation` | `Group<Permutation>` | Permutation composition, parity/sign homomorphism, cycle notation |
+| **$M_{m\times n}(R)$ (Matrices)** | `Matrix<T>` | `Ring<SquareMatrix<T>>` | Sealed ADT (`DenseMatrix`, `SquareMatrix`), Gaussian elimination, inversion |
 
 ---
 
 ## 🚀 Quick Start & Usage Examples
 
-### Rational & Modular Arithmetic
+<details open>
+<summary><b>1. Exact Fractions & Ambient Modular Arithmetic</b></summary>
+
 ```java
 // Exact fraction arithmetic
 Rational half = Rational.of(1, 2);
 Rational third = Rational.of(1, 3);
 Rational fiveSixths = half.add(third); // 5/6
 
-// Ambient Modulo Arithmetic using Scoped Values
+// Ambient Modulo Arithmetic via Scoped Values
 ScopedValue.where(AlgebraicContext.MODULUS, BigInteger.valueOf(17)).run(() -> {
     ModuloInteger a = ModuloInteger.of(12);
     ModuloInteger b = ModuloInteger.of(10);
     ModuloInteger result = a.add(b); // 5 (mod 17)
 });
 ```
+</details>
 
-### High-Performance Matrix Operations
+<details open>
+<summary><b>2. Matrix Operations & Exhaustive Pattern Matching</b></summary>
+
 ```java
-RationalField field = RationalField.INSTANCE;
-
-// Matrix multiplication
-Rational[][] m1 = {
-    {Rational.of(3), Rational.of(-2), Rational.of(5)},
-    {Rational.of(3), Rational.of(0),  Rational.of(4)}
-};
-Rational[][] m2 = {
-    {Rational.of(2),  Rational.of(3)},
-    {Rational.of(-9), Rational.of(0)},
-    {Rational.of(0),  Rational.of(4)}
-};
-
-DenseMatrix<Rational> a = DenseMatrix.of(field, m1);
-DenseMatrix<Rational> b = DenseMatrix.of(field, m2);
-DenseMatrix<Rational> c = a.multiply(b);
-
-// Inverting a Square Matrix
-SquareMatrix<Rational> sq = SquareMatrix.of(field, new Rational[][]{
+// Invert a Square Matrix over Rational Field
+SquareMatrix<Rational> matrix = SquareMatrix.of(Rational.field(), new Rational[][]{
     {Rational.of(1), Rational.of(2)},
     {Rational.of(3), Rational.of(4)}
 });
-SquareMatrix<Rational> inv = sq.inverse(); // [-2, 1; 3/2, -1/2]
+SquareMatrix<Rational> inv = matrix.inverse(); // [-2, 1; 3/2, -1/2]
+
+// Exhaustive pattern matching on Matrix ADT without downcasting
+String summary = switch (matrix) {
+    case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension() + " (det=" + sm.determinant() + ")";
+    case DenseMatrix<?> dm  -> "Rectangular " + dm.rows() + "x" + dm.cols();
+};
 ```
+</details>
 
-### Exhaustive Pattern Matching & Deconstruction
-```java
-// Pattern match on sealed Matrix ADT without casting
-public static String summarize(Matrix<?> matrix) {
-    return switch (matrix) {
-        case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension() + " det=" + sm.determinant();
-        case DenseMatrix<?> dm  -> "Rectangular " + dm.rows() + "x" + dm.cols();
-    };
-}
+<details>
+<summary><b>3. Monoid Stream Gatherers & Prefix Scans</b></summary>
 
-// Record deconstruction pattern matching
-if (matrix instanceof SquareMatrix<Rational>(int dim, var ring, var data)) {
-    System.out.println("Dimension: " + dim + " over " + ring);
-}
-```
-
-### Monoid Stream Gatherers & Prefix Scans
 ```java
 Monoid<Complex> additive = Complex.field().asAdditiveGroup();
 List<Complex> terms = List.of(Complex.of(1, 1), Complex.of(2, 0), Complex.of(0, 3));
 
-// Compute rolling prefix sum: [0, 1+i, 3+i, 3+4i]
+// Compute rolling prefix sum using Java 25 Stream Gatherers
 List<Complex> prefixSums = terms.stream()
     .gather(additive.scanGatherer())
-    .toList();
+    .toList(); // [0, 1+i, 3+i, 3+4i]
 ```
+</details>
 
 ---
 
-## 🧪 Running the Verification Suite
+## 🧪 Build & Test Suite
+
+Requires **OpenJDK 25 LTS** or higher:
 
 ```bash
-# Using the self-bootstrapping Maven Wrapper
+# Run the complete property-based & unit test suite
 ./mvnw clean test
 ```
 All tests execute under JUnit 5 Jupiter and jqwik with `--enable-preview` on JDK 25 LTS.
