@@ -49,6 +49,13 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
     }
 
     /**
+     * Normalizes an element to its canonical associate representative (e.g., non-negative in Z, monic in F[x]).
+     */
+    default T normalize(T element) {
+        return element;
+    }
+
+    /**
      * Computes the greatest common divisor of {@code a} and {@code b} using the Euclidean algorithm.
      */
     default T gcd(T a, T b) {
@@ -59,7 +66,7 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
             r0 = r1;
             r1 = rem;
         }
-        return r0;
+        return normalize(r0);
     }
 
     /**
@@ -70,7 +77,7 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
             return zero();
         }
         T g = gcd(a, b);
-        return multiply(divide(a, g), b);
+        return normalize(multiply(divide(a, g), b));
     }
 
     /**

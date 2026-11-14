@@ -53,8 +53,37 @@ public final class BigIntRing implements EuclideanDomain<BigInteger> {
     }
 
     @Override
+    public BigInteger normalize(BigInteger element) {
+        Objects.requireNonNull(element, "element cannot be null");
+        return element.abs();
+    }
+
+    @Override
     public BigInteger gcd(BigInteger a, BigInteger b) {
+        Objects.requireNonNull(a, "a cannot be null");
+        Objects.requireNonNull(b, "b cannot be null");
         return a.gcd(b);
+    }
+
+    @Override
+    public BigInteger lcm(BigInteger a, BigInteger b) {
+        Objects.requireNonNull(a, "a cannot be null");
+        Objects.requireNonNull(b, "b cannot be null");
+        if (a.signum() == 0 || b.signum() == 0) {
+            return BigInteger.ZERO;
+        }
+        return a.divide(a.gcd(b)).multiply(b).abs();
+    }
+
+    @Override
+    public ExtendedGcdResult<BigInteger> extendedGcd(BigInteger a, BigInteger b) {
+        Objects.requireNonNull(a, "a cannot be null");
+        Objects.requireNonNull(b, "b cannot be null");
+        ExtendedGcdResult<BigInteger> res = EuclideanDomain.super.extendedGcd(a, b);
+        if (res.gcd().signum() < 0) {
+            return new ExtendedGcdResult<>(res.gcd().negate(), res.x().negate(), res.y().negate());
+        }
+        return res;
     }
 
     @Override
