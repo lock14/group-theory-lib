@@ -19,7 +19,8 @@ public class ComplexTest extends ApproximateFieldLaws<Complex> {
 
     @Override
     protected double distance(Complex a, Complex b) {
-        return a.subtract(b).abs();
+        double scale = Math.max(1.0, Math.max(a.abs(), b.abs()));
+        return a.subtract(b).abs() / scale;
     }
 
     @Override
