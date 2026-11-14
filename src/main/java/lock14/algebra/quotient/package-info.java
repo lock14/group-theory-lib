@@ -8,5 +8,8 @@
  * {@link lock14.algebra.quotient.ZMod} for modular arithmetic {@code Z/nZ} and prime fields {@code F_p},
  * and {@link lock14.algebra.quotient.GaloisFields} for finite extension fields {@code GF(p^k)} and
  * Rabin irreducibility testing.
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.quotient.QuotientExamplesTest" region="quotient-and-galois"}
  */
 package lock14.algebra.quotient;

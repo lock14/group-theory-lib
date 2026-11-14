@@ -9,5 +9,8 @@
  * structural constructions for {@link lock14.algebra.group.Subgroup}, {@link lock14.algebra.group.Coset},
  * {@link lock14.algebra.group.QuotientGroup}, and left {@link lock14.algebra.group.GroupAction}
  * computations such as orbits, stabilizers, and Burnside's lemma.
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.group.GroupExamplesTest" region="quotient-and-burnside"}
  */
 package lock14.algebra.group;

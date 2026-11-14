@@ -26,5 +26,8 @@
  *       {@link lock14.algebra.structure.Pair}, and
  *       {@link lock14.algebra.structure.DirectProduct}.</li>
  * </ul>
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.structure.StructureExamplesTest" region="direct-product-and-scan"}
  */
 package lock14.algebra.structure;

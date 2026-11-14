@@ -7,5 +7,8 @@
  * complex, and quaternion numeric types ({@link lock14.algebra.numeric.Float64Field},
  * {@link lock14.algebra.numeric.Complex64}, {@link lock14.algebra.numeric.Quaternion64}), and an off-heap
  * Foreign Function &amp; Memory dense matrix ({@link lock14.algebra.numeric.Float64Matrix}).</p>
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.numeric.NumericExamplesTest" region="ffm-solve-and-rotation"}
  */
 package lock14.algebra.numeric;
