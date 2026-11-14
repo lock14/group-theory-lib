@@ -61,11 +61,13 @@ public record ModuloInteger(BigInteger value, BigInteger modulus) implements Rin
     }
 
     public boolean isOne() {
-        return value.equals(BigInteger.ONE);
+        return modulus.equals(BigInteger.ONE)
+            ? value.equals(BigInteger.ZERO)
+            : value.equals(BigInteger.ONE);
     }
 
     public boolean isInvertible() {
-        return !isZero() && value.gcd(modulus).equals(BigInteger.ONE);
+        return value.gcd(modulus).equals(BigInteger.ONE);
     }
 
     @Override
@@ -93,6 +95,9 @@ public record ModuloInteger(BigInteger value, BigInteger modulus) implements Rin
     }
 
     public ModuloInteger reciprocal() {
+        if (modulus.equals(BigInteger.ONE)) {
+            return this;
+        }
         if (isZero()) {
             throw new ArithmeticException("Cannot invert zero in Z/" + modulus + "Z");
         }

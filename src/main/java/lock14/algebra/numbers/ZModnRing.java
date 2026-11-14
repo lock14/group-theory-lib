@@ -40,31 +40,49 @@ public record ZModnRing(BigInteger modulus) implements CommutativeRing<ModuloInt
 
     @Override
     public ModuloInteger add(ModuloInteger a, ModuloInteger b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.add(b);
     }
 
     @Override
     public ModuloInteger negate(ModuloInteger a) {
+        checkInRing(a);
         return a.negate();
     }
 
     @Override
     public ModuloInteger subtract(ModuloInteger a, ModuloInteger b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.subtract(b);
     }
 
     @Override
     public ModuloInteger multiply(ModuloInteger a, ModuloInteger b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.multiply(b);
     }
 
     @Override
     public boolean isZero(ModuloInteger element) {
+        checkInRing(element);
         return element.isZero();
     }
 
     @Override
     public boolean isOne(ModuloInteger element) {
+        checkInRing(element);
         return element.isOne();
+    }
+
+    private void checkInRing(ModuloInteger m) {
+        Objects.requireNonNull(m, "element cannot be null");
+        if (!m.modulus().equals(this.modulus)) {
+            throw new IllegalArgumentException(
+                "Element modulus " + m.modulus() + " does not match ring modulus " + this.modulus
+            );
+        }
     }
 }

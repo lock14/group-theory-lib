@@ -54,10 +54,29 @@ public record MatrixRing<T>(int dimension, Ring<T> entryRing) implements Ring<Sq
         return a.multiply(b);
     }
 
+    @Override
+    public boolean isZero(SquareMatrix<T> element) {
+        checkInRing(element);
+        return Ring.super.isZero(element);
+    }
+
+    @Override
+    public boolean isOne(SquareMatrix<T> element) {
+        checkInRing(element);
+        return Ring.super.isOne(element);
+    }
+
     private void checkInRing(SquareMatrix<T> m) {
         Objects.requireNonNull(m, "matrix cannot be null");
         if (m.dimension() != this.dimension) {
-            throw new IllegalArgumentException("Matrix dimension " + m.dimension() + " does not match ring dimension " + this.dimension);
+            throw new IllegalArgumentException(
+                "Matrix dimension " + m.dimension() + " does not match ring dimension " + this.dimension
+            );
+        }
+        if (!Objects.equals(m.ring(), this.entryRing)) {
+            throw new IllegalArgumentException(
+                "Matrix entry ring " + m.ring() + " does not match ring entryRing " + this.entryRing
+            );
         }
     }
 }

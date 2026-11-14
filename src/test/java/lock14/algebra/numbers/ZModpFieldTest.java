@@ -41,4 +41,20 @@ public class ZModpFieldTest extends FieldLaws<ModuloInteger> {
         assertThatThrownBy(() -> new ZModpField(-7))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    public void testForeignModulusOperandsRejected() {
+        ZModpField f5 = new ZModpField(5);
+        ModuloInteger sevenA = ModuloInteger.of(3, 7);
+        ModuloInteger sevenB = ModuloInteger.of(4, 7);
+
+        assertThatThrownBy(() -> f5.add(sevenA, sevenB))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.reciprocal(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.divide(sevenA, sevenB))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.isOne(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

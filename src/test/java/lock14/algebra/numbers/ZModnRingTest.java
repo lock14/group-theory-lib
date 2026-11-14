@@ -33,4 +33,30 @@ public class ZModnRingTest extends CommutativeRingLaws<ModuloInteger> {
         assertThatThrownBy(() -> new ZModnRing(-5))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    public void testTrivialZeroRingModulusOne() {
+        ZModnRing trivial = new ZModnRing(1);
+        assertThat(trivial.zero()).isEqualTo(trivial.one());
+        assertThat(trivial.isZero(trivial.zero())).isTrue();
+        assertThat(trivial.isOne(trivial.one())).isTrue();
+        assertThat(trivial.one().isInvertible()).isTrue();
+        assertThat(trivial.one().reciprocal()).isEqualTo(trivial.one());
+    }
+
+    @Test
+    public void testForeignModulusOperandsRejected() {
+        ZModnRing mod5 = new ZModnRing(5);
+        ModuloInteger sevenA = ModuloInteger.of(3, 7);
+        ModuloInteger sevenB = ModuloInteger.of(4, 7);
+
+        assertThatThrownBy(() -> mod5.add(sevenA, sevenB))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> mod5.negate(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> mod5.isZero(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> mod5.isOne(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

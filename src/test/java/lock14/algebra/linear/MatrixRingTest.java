@@ -181,4 +181,19 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
         assertThatThrownBy(singular::inverse)
                 .isInstanceOf(NonInvertibleElementException.class);
     }
+
+    @Test
+    public void testForeignEntryRingMatrixRejected() {
+        MatrixRing<ModuloInteger> m2z5 = new MatrixRing<>(2, new ZModnRing(5));
+        ZModnRing z7 = new ZModnRing(7);
+        SquareMatrix<ModuloInteger> a7 = SquareMatrix.identity(2, z7);
+        SquareMatrix<ModuloInteger> b7 = SquareMatrix.zeros(2, z7);
+
+        assertThatThrownBy(() -> m2z5.add(a7, b7))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> m2z5.multiply(a7, b7))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> m2z5.isOne(a7))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }
