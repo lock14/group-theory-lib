@@ -65,8 +65,12 @@ SquareMatrix<Rational> matrix = SquareMatrix.of(Rational.field(), new Rational[]
 });
 SquareMatrix<Rational> inv = matrix.inverse(); // [-2, 1; 3/2, -1/2]
 
-// Exhaustive pattern matching on Matrix ADT without downcasting
-String summary = switch (matrix) {
+// Exhaustive pattern matching on the disjoint Matrix ADT without downcasting
+Matrix<Rational> anyMatrix = Matrix.of(Rational.field(), new Rational[][]{
+    {Rational.of(1), Rational.of(2), Rational.of(3)},
+    {Rational.of(4), Rational.of(5), Rational.of(6)}
+});
+String summary = switch (anyMatrix) {
     case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension() + " (det=" + sm.determinant() + ")";
     case DenseMatrix<?> dm  -> "Rectangular " + dm.rows() + "x" + dm.cols();
 };
