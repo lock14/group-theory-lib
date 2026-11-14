@@ -28,6 +28,7 @@ public sealed interface Matrix<T> permits RectangularMatrix, SquareMatrix {
      * @return an immutable {@link Matrix}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     static <T> Matrix<T> of(int rows, int cols, Ring<T> ring, T... elements) {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("Matrix dimensions must be positive: " + rows + "x" + cols);

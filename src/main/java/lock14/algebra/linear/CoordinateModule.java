@@ -39,6 +39,7 @@ public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements 
      * @return the coordinate vector in {@code R^n}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final Vector<T> of(T... elements) {
         Objects.requireNonNull(elements, "elements cannot be null");
         if (elements.length != dimension) {

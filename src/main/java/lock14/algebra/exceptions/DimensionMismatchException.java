@@ -1,9 +1,14 @@
 package lock14.algebra.exceptions;
 
+import java.io.Serial;
+
 /**
  * Thrown when vector or matrix dimensions do not satisfy operation constraints.
  */
 public class DimensionMismatchException extends IllegalArgumentException {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * Constructs a {@code DimensionMismatchException} with the specified detail message.
      *

@@ -44,6 +44,7 @@ public record CoordinateVectorSpace<T>(int dimension, Field<T> scalarField) impl
      * @return the coordinate vector in {@code F^n}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final Vector<T> of(T... elements) {
         return asModule().of(elements);
     }

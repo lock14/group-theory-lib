@@ -1,6 +1,8 @@
 # 📐 group-theory-lib 3.0
 
 [![CI](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml)
+[![Security](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/lock14/group-theory-lib)](https://codecov.io/gh/lock14/group-theory-lib)
 [![Java 25](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 

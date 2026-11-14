@@ -41,6 +41,7 @@ public record PolynomialRing<T>(CommutativeRing<T> coefficientRing) implements C
      * @return the canonical polynomial over {@link #coefficientRing()}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientRing, coeffs);
     }
