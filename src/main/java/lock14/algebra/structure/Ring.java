@@ -1,7 +1,5 @@
 package lock14.algebra.structure;
 
-import java.util.Objects;
-
 /**
  * A Ring (Unital Ring) is a set equipped with addition and multiplication such that
  * (R, +, 0) is an Abelian Group and (R, *, 1) is a Monoid, and multiplication distributes over addition.

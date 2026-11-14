@@ -1,6 +1,5 @@
 package lock14.algebra.structure;
 
-import java.util.Objects;
 import java.util.function.BinaryOperator;
 
 /**
