@@ -9,18 +9,35 @@ import lock14.algebra.structure.Ring;
  * non-commutative {@link Ring} {@code R} (e.g., {@code M_n(R)[x]} or {@code H(Q)[x]}).
  *
  * @param <T> coefficient element type
+ * @param coefficientRing the underlying (possibly non-commutative) ring of coefficients
  */
 public record NonCommutativePolynomialRing<T>(Ring<T> coefficientRing) implements Ring<Polynomial<T>> {
 
+    /**
+     * Validates that the coefficient ring is non-null.
+     *
+     * @param coefficientRing the underlying ring of coefficients
+     */
     public NonCommutativePolynomialRing {
         Objects.requireNonNull(coefficientRing, "coefficientRing cannot be null");
     }
 
+    /**
+     * Constructs a polynomial in {@code R[x]} from ascending-degree coefficients.
+     *
+     * @param coeffs coefficients in ascending degree order {@code (a_0, a_1, ...)}
+     * @return the canonical polynomial over {@link #coefficientRing()}
+     */
     @SafeVarargs
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientRing, coeffs);
     }
 
+    /**
+     * Returns the indeterminate polynomial {@code x} in {@code R[x]}.
+     *
+     * @return the linear monomial {@code x}
+     */
     public Polynomial<T> x() {
         return Polynomial.x(coefficientRing);
     }

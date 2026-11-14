@@ -16,6 +16,12 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
     private final int modulus;
     private final Set<Integer> elements;
 
+    /**
+     * Constructs the finite cyclic group {@code C_n} of the specified order.
+     *
+     * @param order the group order {@code n} ({@code order >= 1})
+     * @throws IllegalArgumentException if {@code order <= 0}
+     */
     public CyclicGroup(int order) {
         if (order <= 0) {
             throw new IllegalArgumentException("Cyclic group order must be positive: " + order);
@@ -28,6 +34,12 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
         this.elements = Set.copyOf(elems);
     }
 
+    /**
+     * Returns the canonical additive generator of this cyclic group ({@code 0} when {@code order == 1},
+     * or {@code 1} when {@code order > 1}).
+     *
+     * @return the canonical generator residue in {@code {0, ..., n - 1}}
+     */
     public int generator() {
         return modulus == 1 ? 0 : 1;
     }

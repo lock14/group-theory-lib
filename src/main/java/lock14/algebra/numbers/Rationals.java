@@ -7,6 +7,9 @@ import lock14.algebra.structure.Field;
  */
 public final class Rationals implements Field<Rational> {
 
+    /**
+     * Singleton instance of the exact field of rational numbers {@code Q}.
+     */
     public static final Rationals FIELD = new Rationals();
 
     private Rationals() {}

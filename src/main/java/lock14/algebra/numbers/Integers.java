@@ -11,6 +11,9 @@ import lock14.algebra.structure.EuclideanDomain;
  */
 public final class Integers implements EuclideanDomain<BigInteger> {
 
+    /**
+     * Singleton instance of the Euclidean domain of integers {@code Z}.
+     */
     public static final Integers RING = new Integers();
 
     private Integers() {}

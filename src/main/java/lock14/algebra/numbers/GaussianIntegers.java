@@ -12,14 +12,31 @@ import lock14.algebra.structure.EuclideanDomain;
  */
 public final class GaussianIntegers implements EuclideanDomain<Complex<BigInteger>> {
 
+    /**
+     * Singleton instance of the Euclidean domain of Gaussian integers {@code Z[i]}.
+     */
     public static final GaussianIntegers DOMAIN = new GaussianIntegers();
 
     private GaussianIntegers() {}
 
+    /**
+     * Constructs a Gaussian integer {@code real + imaginary * i} from {@code long} coordinates.
+     *
+     * @param real      the integer real part
+     * @param imaginary the integer imaginary part
+     * @return the Gaussian integer {@code real + imaginary * i}
+     */
     public Complex<BigInteger> of(long real, long imaginary) {
         return Complex.gaussian(real, imaginary);
     }
 
+    /**
+     * Constructs a Gaussian integer {@code real + imaginary * i} from {@link BigInteger} coordinates.
+     *
+     * @param real      the arbitrary-precision integer real part
+     * @param imaginary the arbitrary-precision integer imaginary part
+     * @return the Gaussian integer {@code real + imaginary * i}
+     */
     public Complex<BigInteger> of(BigInteger real, BigInteger imaginary) {
         return Complex.gaussian(real, imaginary);
     }
@@ -81,6 +98,9 @@ public final class GaussianIntegers implements EuclideanDomain<Complex<BigIntege
 
     /**
      * Rotates any non-zero Gaussian integer into its unique first-quadrant associate {@code {re > 0, im >= 0}}.
+     *
+     * @param element the Gaussian integer to normalize
+     * @return {@code 0} if {@code element} is zero, otherwise its canonical first-quadrant associate
      */
     @Override
     public Complex<BigInteger> normalize(Complex<BigInteger> element) {

@@ -7,18 +7,36 @@ import lock14.algebra.structure.CommutativeRing;
 /**
  * The Commutative Ring {@code R[i] = R[x]/(x^2 + 1)} over any {@link CommutativeRing} {@code R}.
  *
- * @param <T> scalar ring element type
+ * @param <T>        scalar ring element type
+ * @param scalarRing the underlying commutative scalar ring {@code R}
  */
 public record ComplexRing<T>(CommutativeRing<T> scalarRing) implements CommutativeRing<Complex<T>> {
 
+    /**
+     * Validates that {@code scalarRing} is non-null.
+     *
+     * @param scalarRing the underlying commutative scalar ring
+     */
     public ComplexRing {
         Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
     }
 
+    /**
+     * Constructs an element {@code real + imaginary * i} in this complex ring.
+     *
+     * @param real      the real part
+     * @param imaginary the imaginary part
+     * @return the complex element {@code real + imaginary * i}
+     */
     public Complex<T> of(T real, T imaginary) {
         return Complex.of(scalarRing, real, imaginary);
     }
 
+    /**
+     * Returns the imaginary unit {@code i = 0 + 1*i} in this complex ring.
+     *
+     * @return the imaginary unit {@code i}
+     */
     public Complex<T> i() {
         return Complex.imaginary(scalarRing, scalarRing.one());
     }

@@ -11,19 +11,30 @@ import java.util.Objects;
 public interface Ring<T> extends Semiring<T> {
 
     /**
-     * Returns the additive inverse (-a) of {@code a}.
+     * Returns the additive inverse ({@code -a}) of {@code a}.
+     *
+     * @param a the element to negate
+     * @return the additive inverse {@code -a}
      */
     T negate(T a);
 
     /**
      * Computes the difference: {@code a - b = a + (-b)}.
+     *
+     * @param a the minuend
+     * @param b the subtrahend
+     * @return the difference {@code a - b}
      */
     default T subtract(T a, T b) {
         return add(a, negate(b));
     }
 
     /**
-     * Multiplies {@code a} by integer scalar {@code n} using O(log |n|) double-and-add without wrapper allocation.
+     * Multiplies {@code a} by integer scalar {@code n} using {@code O(log |n|)} double-and-add without wrapper allocation.
+     *
+     * @param a the ring element to scale
+     * @param n the integer scalar multiplier (positive, zero, or negative)
+     * @return the integer multiple {@code n * a}
      */
     default T multiplyByScalar(T a, long n) {
         Objects.requireNonNull(a, "element cannot be null");
@@ -57,7 +68,12 @@ public interface Ring<T> extends Semiring<T> {
     }
 
     /**
-     * Computes integer power {@code element^n} for {@code n >= 0} using O(log n) square-and-multiply.
+     * Computes integer power {@code element^n} for {@code n >= 0} using {@code O(log n)} square-and-multiply.
+     *
+     * @param element the base ring element
+     * @param n       the non-negative exponent ({@code n >= 0})
+     * @return {@code element} raised to the {@code n}-th multiplicative power, or {@link #one()} when {@code n == 0}
+     * @throws IllegalArgumentException if {@code n < 0}
      */
     default T power(T element, int n) {
         Objects.requireNonNull(element, "element cannot be null");
@@ -84,6 +100,8 @@ public interface Ring<T> extends Semiring<T> {
 
     /**
      * Views this ring's additive structure as an {@link AbelianGroup}.
+     *
+     * @return an {@link AbelianGroup} view over {@link #add(Object, Object)}, {@link #zero()}, and {@link #negate(Object)}
      */
     default AbelianGroup<T> asAdditiveGroup() {
         record AdditiveGroupView<E>(Ring<E> ring) implements AbelianGroup<E> {
@@ -107,6 +125,8 @@ public interface Ring<T> extends Semiring<T> {
 
     /**
      * Views this ring's multiplicative structure as a {@link Monoid}.
+     *
+     * @return a {@link Monoid} view over {@link #multiply(Object, Object)} and {@link #one()}
      */
     default Monoid<T> asMultiplicativeMonoid() {
         record MultiplicativeMonoidView<E>(Ring<E> ring) implements Monoid<E> {

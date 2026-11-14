@@ -14,6 +14,14 @@ import lock14.algebra.structure.Field;
  */
 public final class QuotientField<T> extends QuotientRing<T> implements Field<Residue<T>> {
 
+    /**
+     * Constructs the quotient field {@code E / (p)} over {@code domain} modulo an irreducible non-unit
+     * element {@code irreducibleModulus}.
+     *
+     * @param domain the underlying Euclidean domain {@code E}
+     * @param irreducibleModulus a non-zero, non-unit irreducible modulus {@code p} in {@code domain}
+     * @throws IllegalArgumentException if {@code irreducibleModulus} is zero or a unit in {@code domain}
+     */
     public QuotientField(EuclideanDomain<T> domain, T irreducibleModulus) {
         super(domain, irreducibleModulus);
         if (domain.isUnit(modulus())) {

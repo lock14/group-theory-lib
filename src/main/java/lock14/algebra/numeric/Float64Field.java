@@ -8,6 +8,9 @@ import lock14.algebra.exceptions.NonInvertibleElementException;
  */
 public final class Float64Field implements ApproximateField<Double> {
 
+    /**
+     * Singleton instance of the approximate IEEE-754 64-bit floating-point field.
+     */
     public static final Float64Field INSTANCE = new Float64Field();
 
     private Float64Field() {

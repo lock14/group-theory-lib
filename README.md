@@ -22,6 +22,8 @@ A clean-slate, axiomatically exact abstract algebra, finite group theory, and li
 | Package | Key Types | Algebraic Structures & Capabilities |
 | :--- | :--- | :--- |
 | `lock14.algebra.structure` | `Group`, `FiniteGroup`, `Ring`, `EuclideanDomain`, `DivisionRing`, `Field`, `LeftModule`, `VectorSpace`, `DirectProduct`, `GroupHomomorphism`, `RingHomomorphism` | Exact algebraic typeclass hierarchy, zero-allocation binary exponentiation, Java 25 `Gatherer` scans, direct products, and morphisms |
+| `lock14.algebra.element` | `GroupElement`, `RingElement`, `DivisionRingElement`, `FieldElement`, `ModuleElement` | Self-typed fluent element interfaces enabling natural infix-style arithmetic (`a.add(b)`, `x.reciprocal()`) |
+| `lock14.algebra.exceptions` | `AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException`, `UndefinedOperationException` | Unchecked domain exception hierarchy for invalid algebraic operations |
 | `lock14.algebra.group` | `Permutation`, `SymmetricGroup`, `AlternatingGroup`, `CyclicGroup`, `DihedralGroup`, `Subgroup`, `Coset`, `QuotientGroup`, `GroupAction` | Finite groups ($S_n, A_n, C_n, D_n$), normal subgroup verification, quotient groups $G/N$, Orbit-Stabilizer, and Burnside's lemma |
 | `lock14.algebra.numbers` | `Integers`, `Rational`, `Rationals`, `Complex<T>`, `GaussianIntegers`, `ComplexField<T>`, `Quaternion<T>`, `QuaternionRing<T>`, `QuaternionDivisionRing<T>` | Canonical least-non-negative Euclidean $\mathbb{Z}$, exact $\mathbb{Q}$, Euclidean Gaussian integers $\mathbb{Z}[i]$, $\mathbb{Q}(i)$, and exact division ring $\mathbb{H}(\mathbb{Q})$ |
 | `lock14.algebra.polynomial` | `Polynomial<T>`, `PolynomialRing<T>`, `NonCommutativePolynomialRing<T>`, `PolynomialEuclideanDomain<T>` | Univariate polynomials over commutative & non-commutative rings, monic Euclidean long division, Bézout GCD, Horner evaluation, derivatives |
@@ -101,5 +103,5 @@ try (Float64Matrix m = Float64Matrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}}
 Requires **OpenJDK 25 LTS** or higher:
 
 ```bash
-./mvnw clean test
+./mvnw clean test javadoc:javadoc
 ```

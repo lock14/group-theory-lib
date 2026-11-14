@@ -18,6 +18,12 @@ public final class SymmetricGroup implements FiniteGroup<Permutation> {
     private final int degree;
     private volatile Set<Permutation> cachedElements;
 
+    /**
+     * Constructs the symmetric group {@code S_n} of degree {@code n}.
+     *
+     * @param degree the number of permuted elements {@code n} ({@code degree >= 1})
+     * @throws IllegalArgumentException if {@code degree <= 0}
+     */
     public SymmetricGroup(int degree) {
         if (degree <= 0) {
             throw new IllegalArgumentException("Degree must be positive: " + degree);
@@ -25,6 +31,11 @@ public final class SymmetricGroup implements FiniteGroup<Permutation> {
         this.degree = degree;
     }
 
+    /**
+     * Returns the degree {@code n} of this symmetric group {@code S_n}.
+     *
+     * @return the degree {@code n}
+     */
     public int degree() {
         return degree;
     }
@@ -94,6 +105,8 @@ public final class SymmetricGroup implements FiniteGroup<Permutation> {
     /**
      * Returns the sign homomorphism {@code sgn: S_n -> C_2} mapping even permutations to {@code 0}
      * and odd permutations to {@code 1}.
+     *
+     * @return the parity homomorphism into {@link CyclicGroup} {@code C_2}
      */
     public GroupHomomorphism<Permutation, Integer> signHomomorphism() {
         return p -> {

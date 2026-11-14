@@ -16,11 +16,15 @@ public interface FiniteGroup<T> extends Group<T> {
 
     /**
      * Returns an unmodifiable view of all elements in this finite group.
+     *
+     * @return an unmodifiable set containing all elements of this group
      */
     Set<T> elements();
 
     /**
      * Returns the cardinality (order) {@code |G|} of this finite group.
+     *
+     * @return the number of elements in this group
      */
     default long order() {
         return elements().size();
@@ -28,6 +32,9 @@ public interface FiniteGroup<T> extends Group<T> {
 
     /**
      * Checks whether {@code element} belongs to this finite group.
+     *
+     * @param element the candidate element to check
+     * @return {@code true} if {@code element} belongs to this group, {@code false} otherwise
      */
     default boolean contains(T element) {
         Objects.requireNonNull(element, "element cannot be null");
@@ -37,6 +44,10 @@ public interface FiniteGroup<T> extends Group<T> {
     /**
      * Computes the multiplicative order of {@code element}: the smallest positive integer {@code k}
      * such that {@code power(element, k)} equals {@link #identity()}.
+     *
+     * @param element the group element whose order is computed
+     * @return the smallest positive integer {@code k} such that {@code power(element, k)} equals {@link #identity()}
+     * @throws IllegalArgumentException if {@code element} does not belong to this group
      */
     default long elementOrder(T element) {
         Objects.requireNonNull(element, "element cannot be null");
@@ -59,6 +70,8 @@ public interface FiniteGroup<T> extends Group<T> {
 
     /**
      * Checks whether this finite group is Abelian ({@code ab == ba} for all {@code a, b}).
+     *
+     * @return {@code true} if the group operation is commutative for all element pairs, {@code false} otherwise
      */
     default boolean isAbelian() {
         Set<T> elems = elements();
@@ -74,6 +87,10 @@ public interface FiniteGroup<T> extends Group<T> {
 
     /**
      * Generates the subgroup carrier {@code <S>} closed under group multiplication and inversion.
+     *
+     * @param generators the generating elements (all must belong to this group)
+     * @return an unmodifiable set containing the generated subgroup carrier {@code <S>}
+     * @throws IllegalArgumentException if any generator does not belong to this group
      */
     default Set<T> generateClosure(Collection<T> generators) {
         Objects.requireNonNull(generators, "generators cannot be null");

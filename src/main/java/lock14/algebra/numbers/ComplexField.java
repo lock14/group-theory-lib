@@ -8,22 +8,45 @@ import lock14.algebra.structure.Field;
  * The Quadratic Extension Field {@code F(i) = F[x]/(x^2 + 1)} over any {@link Field} {@code F}
  * in which {@code -1} is not a square (such as {@link Rationals#FIELD} {@code Q(i)} or {@code F_p} with {@code p = 3 mod 4}).
  *
- * @param <T> scalar field element type
+ * @param <T>         scalar field element type
+ * @param scalarField the underlying scalar field {@code F}
  */
 public record ComplexField<T>(Field<T> scalarField) implements Field<Complex<T>> {
 
+    /**
+     * Validates that {@code scalarField} is non-null.
+     *
+     * @param scalarField the underlying scalar field
+     */
     public ComplexField {
         Objects.requireNonNull(scalarField, "scalarField cannot be null");
     }
 
+    /**
+     * Returns the exact Gaussian rational field {@code Q(i)} over {@link Rationals#FIELD}.
+     *
+     * @return the field {@code Q(i)}
+     */
     public static ComplexField<Rational> overRationals() {
         return new ComplexField<>(Rationals.FIELD);
     }
 
+    /**
+     * Constructs an element {@code real + imaginary * i} in this complex field.
+     *
+     * @param real      the real part
+     * @param imaginary the imaginary part
+     * @return the complex element {@code real + imaginary * i}
+     */
     public Complex<T> of(T real, T imaginary) {
         return Complex.of(scalarField, real, imaginary);
     }
 
+    /**
+     * Returns the imaginary unit {@code i = 0 + 1*i} in this complex field.
+     *
+     * @return the imaginary unit {@code i}
+     */
     public Complex<T> i() {
         return Complex.imaginary(scalarField, scalarField.one());
     }

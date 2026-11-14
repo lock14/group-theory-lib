@@ -9,14 +9,42 @@ import java.util.Objects;
  */
 public interface EuclideanDomain<T> extends IntegralDomain<T> {
 
+    /**
+     * Quotient-remainder pair produced by Euclidean division {@code a = quotient * b + remainder}.
+     *
+     * @param <T>       the carrier type of elements
+     * @param quotient  the Euclidean quotient
+     * @param remainder the Euclidean remainder
+     */
     record DivisionResult<T>(T quotient, T remainder) {
+        /**
+         * Validates that {@code quotient} and {@code remainder} are non-null.
+         *
+         * @param quotient  the Euclidean quotient
+         * @param remainder the Euclidean remainder
+         */
         public DivisionResult {
             Objects.requireNonNull(quotient, "quotient cannot be null");
             Objects.requireNonNull(remainder, "remainder cannot be null");
         }
     }
 
+    /**
+     * Result of the extended Euclidean algorithm satisfying {@code a * x + b * y = gcd}.
+     *
+     * @param <T> the carrier type of elements
+     * @param gcd the normalized greatest common divisor {@code gcd(a, b)}
+     * @param x   the first Bézout coefficient
+     * @param y   the second Bézout coefficient
+     */
     record ExtendedGcdResult<T>(T gcd, T x, T y) {
+        /**
+         * Validates that {@code gcd}, {@code x}, and {@code y} are non-null.
+         *
+         * @param gcd the normalized greatest common divisor
+         * @param x   the first Bézout coefficient
+         * @param y   the second Bézout coefficient
+         */
         public ExtendedGcdResult {
             Objects.requireNonNull(gcd, "gcd cannot be null");
             Objects.requireNonNull(x, "x cannot be null");
@@ -35,6 +63,10 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
 
     /**
      * Computes the quotient of {@code a / b}.
+     *
+     * @param a the dividend
+     * @param b the non-zero divisor
+     * @return the Euclidean quotient of {@code a} divided by {@code b}
      */
     default T divide(T a, T b) {
         return divideAndRemainder(a, b).quotient();
@@ -42,13 +74,20 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
 
     /**
      * Computes the remainder of {@code a % b}.
+     *
+     * @param a the dividend
+     * @param b the non-zero divisor
+     * @return the Euclidean remainder of {@code a} divided by {@code b}
      */
     default T remainder(T a, T b) {
         return divideAndRemainder(a, b).remainder();
     }
 
     /**
-     * Normalizes an element to its canonical associate representative (e.g., non-negative in Z, monic in F[x]).
+     * Normalizes an element to its canonical associate representative (e.g., non-negative in {@code Z}, monic in {@code F[x]}).
+     *
+     * @param element the element to normalize
+     * @return the canonical associate representative of {@code element}
      */
     default T normalize(T element) {
         return element;
@@ -56,6 +95,10 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
 
     /**
      * Computes the greatest common divisor of {@code a} and {@code b} using the Euclidean algorithm.
+     *
+     * @param a the first element
+     * @param b the second element
+     * @return the normalized greatest common divisor of {@code a} and {@code b}
      */
     default T gcd(T a, T b) {
         T r0 = a;
@@ -70,6 +113,10 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
 
     /**
      * Computes the least common multiple of {@code a} and {@code b}.
+     *
+     * @param a the first element
+     * @param b the second element
+     * @return the normalized least common multiple of {@code a} and {@code b}, or {@link #zero()} if either operand is zero
      */
     default T lcm(T a, T b) {
         if (isZero(a) || isZero(b)) {
@@ -80,8 +127,12 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
     }
 
     /**
-     * Computes Bézout coefficients (x, y) such that {@code a*x + b*y = gcd(a, b)},
+     * Computes Bézout coefficients {@code (x, y)} such that {@code a*x + b*y = gcd(a, b)},
      * where {@code gcd(a, b)} is normalized via {@link #normalize(Object)}.
+     *
+     * @param a the first element
+     * @param b the second element
+     * @return the normalized greatest common divisor together with Bézout coefficients {@code (x, y)}
      */
     default ExtendedGcdResult<T> extendedGcd(T a, T b) {
         Objects.requireNonNull(a, "a cannot be null");

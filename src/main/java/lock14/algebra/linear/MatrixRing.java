@@ -8,10 +8,18 @@ import lock14.algebra.structure.Ring;
 /**
  * The Matrix Ring {@code M_n(R)} of {@code n x n} {@link SquareMatrix} elements over an exact {@link Ring} {@code R}.
  *
- * @param <T> scalar ring element type
+ * @param <T>       scalar ring element type
+ * @param dimension the positive matrix dimension {@code n}
+ * @param entryRing the underlying scalar entry ring {@code R}
  */
 public record MatrixRing<T>(int dimension, Ring<T> entryRing) implements Ring<SquareMatrix<T>> {
 
+    /**
+     * Validates that {@code dimension} is positive and {@code entryRing} is non-null.
+     *
+     * @param dimension the positive matrix dimension {@code n}
+     * @param entryRing the underlying scalar entry ring
+     */
     public MatrixRing {
         if (dimension <= 0) {
             throw new IllegalArgumentException("Matrix ring dimension must be positive: " + dimension);
@@ -19,6 +27,12 @@ public record MatrixRing<T>(int dimension, Ring<T> entryRing) implements Ring<Sq
         Objects.requireNonNull(entryRing, "entryRing cannot be null");
     }
 
+    /**
+     * Constructs an {@code n x n} {@link SquareMatrix} in this matrix ring from {@code n * n} row-major elements.
+     *
+     * @param elements the {@code dimension * dimension} entries in row-major order
+     * @return an {@code n x n} {@link SquareMatrix} in {@code M_n(R)}
+     */
     @SafeVarargs
     public final SquareMatrix<T> of(T... elements) {
         return SquareMatrix.of(dimension, entryRing, elements);

@@ -14,26 +14,55 @@ import lock14.algebra.structure.Field;
  * equipped with polynomial long division and monic canonical normalization.
  *
  * @param <T> scalar field element type
+ * @param coefficientField the underlying field of scalar coefficients
  */
 public record PolynomialEuclideanDomain<T>(Field<T> coefficientField) implements EuclideanDomain<Polynomial<T>> {
 
+    /**
+     * Validates that the scalar coefficient field is non-null.
+     *
+     * @param coefficientField the underlying field of scalar coefficients
+     */
     public PolynomialEuclideanDomain {
         Objects.requireNonNull(coefficientField, "coefficientField cannot be null");
     }
 
+    /**
+     * Constructs a polynomial in {@code F[x]} from ascending-degree coefficients.
+     *
+     * @param coeffs coefficients in ascending degree order {@code (a_0, a_1, ...)}
+     * @return the canonical polynomial over {@link #coefficientField()}
+     */
     @SafeVarargs
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientField, coeffs);
     }
 
+    /**
+     * Constructs a polynomial in {@code F[x]} from a list of ascending-degree coefficients.
+     *
+     * @param coeffs coefficients in ascending degree order {@code [a_0, a_1, ...]}
+     * @return the canonical polynomial over {@link #coefficientField()}
+     */
     public Polynomial<T> of(List<T> coeffs) {
         return Polynomial.of(coefficientField, coeffs);
     }
 
+    /**
+     * Returns the indeterminate polynomial {@code x} in {@code F[x]}.
+     *
+     * @return the linear monomial {@code x}
+     */
     public Polynomial<T> x() {
         return Polynomial.x(coefficientField);
     }
 
+    /**
+     * Embeds a scalar {@code c} as a constant polynomial in {@code F[x]}.
+     *
+     * @param c the scalar constant term
+     * @return the constant polynomial {@code c}
+     */
     public Polynomial<T> constant(T c) {
         return Polynomial.constant(coefficientField, c);
     }

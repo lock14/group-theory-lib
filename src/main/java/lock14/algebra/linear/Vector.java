@@ -26,6 +26,14 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         this.data = trustedData;
     }
 
+    /**
+     * Constructs an immutable coordinate vector over {@code ring} from the given elements.
+     *
+     * @param <T>      scalar ring entry type
+     * @param ring     the underlying scalar ring
+     * @param elements the non-empty coordinate entries
+     * @return an immutable vector containing {@code elements}
+     */
     @SafeVarargs
     public static <T> Vector<T> of(Ring<T> ring, T... elements) {
         Objects.requireNonNull(ring, "ring cannot be null");
@@ -40,6 +48,14 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return new Vector<>(elements.length, ring, copy);
     }
 
+    /**
+     * Constructs an immutable coordinate vector over {@code ring} from a non-empty list of elements.
+     *
+     * @param <T>      scalar ring entry type
+     * @param ring     the underlying scalar ring
+     * @param elements the non-empty list of coordinate entries
+     * @return an immutable vector containing {@code elements}
+     */
     public static <T> Vector<T> of(Ring<T> ring, List<T> elements) {
         Objects.requireNonNull(ring, "ring cannot be null");
         Objects.requireNonNull(elements, "elements cannot be null");
@@ -53,6 +69,14 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return new Vector<>(copy.length, ring, copy);
     }
 
+    /**
+     * Constructs the {@code dimension}-dimensional zero vector over {@code ring}.
+     *
+     * @param <T>       scalar ring entry type
+     * @param dimension the positive vector dimension
+     * @param ring      the underlying scalar ring
+     * @return a vector of length {@code dimension} filled with {@code ring.zero()}
+     */
     public static <T> Vector<T> zeros(int dimension, Ring<T> ring) {
         if (dimension <= 0) {
             throw new IllegalArgumentException("Vector dimension must be positive: " + dimension);
@@ -63,10 +87,20 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return new Vector<>(dimension, ring, arr);
     }
 
+    /**
+     * Returns the number of coordinates in this vector.
+     *
+     * @return the positive dimension of this vector
+     */
     public int dimension() {
         return dimension;
     }
 
+    /**
+     * Returns the scalar {@link Ring} over which this vector is defined.
+     *
+     * @return the scalar entry ring
+     */
     public Ring<T> ring() {
         return ring;
     }
@@ -75,6 +109,12 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return data;
     }
 
+    /**
+     * Returns the coordinate at zero-based index {@code i}.
+     *
+     * @param i zero-based coordinate index in {@code [0, dimension())}
+     * @return the coordinate entry at index {@code i}
+     */
     @SuppressWarnings("unchecked")
     public T get(int i) {
         if (i < 0 || i >= dimension) {
@@ -83,6 +123,13 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return (T) data[i];
     }
 
+    /**
+     * Returns a new vector identical to this vector except with index {@code i} set to {@code val}.
+     *
+     * @param i   zero-based coordinate index in {@code [0, dimension())}
+     * @param val the replacement scalar value
+     * @return an updated copy of this vector
+     */
     public Vector<T> with(int i, T val) {
         Objects.requireNonNull(val, "val cannot be null");
         get(i);
@@ -134,6 +181,12 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return new Vector<>(dimension, ring, res);
     }
 
+    /**
+     * Computes the standard bilinear dot product {@code sum_i (this[i] * other[i])}.
+     *
+     * @param other the right-hand vector of the same dimension and ring
+     * @return the scalar dot product in {@link #ring()}
+     */
     @SuppressWarnings("unchecked")
     public T dot(Vector<T> other) {
         checkCompatible(other);
@@ -146,6 +199,9 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
 
     /**
      * Row-vector-by-matrix product {@code this^T * matrix}.
+     *
+     * @param matrix a matrix over the same ring with {@code matrix.rows() == this.dimension()}
+     * @return the product vector of dimension {@code matrix.cols()}
      */
     public Vector<T> multiply(Matrix<T> matrix) {
         Objects.requireNonNull(matrix, "matrix cannot be null");
@@ -165,6 +221,11 @@ public final class Vector<T> implements ModuleElement<Vector<T>, T> {
         return new Vector<>(matrix.cols(), ring, res);
     }
 
+    /**
+     * Returns an unmodifiable {@link List} view of this vector's coordinates.
+     *
+     * @return an unmodifiable list of length {@link #dimension()}
+     */
     @SuppressWarnings("unchecked")
     public List<T> toList() {
         return (List<T>) List.of(data);

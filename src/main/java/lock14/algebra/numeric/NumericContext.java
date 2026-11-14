@@ -30,6 +30,7 @@ public final class NumericContext {
     /**
      * Returns the bound {@link #EPSILON} tolerance in the active scope, or {@link #DEFAULT_EPSILON} if unbound.
      *
+     * @return the active non-negative numerical tolerance
      * @throws IllegalStateException if the bound epsilon is {@code null}, {@code NaN}, infinite, or negative
      */
     public static double currentEpsilon() {
@@ -48,6 +49,7 @@ public final class NumericContext {
     /**
      * Returns the bound {@link #MATH_CONTEXT} in the active scope, or {@link MathContext#DECIMAL128} if unbound.
      *
+     * @return the active {@link MathContext}
      * @throws IllegalStateException if the bound {@code MathContext} is {@code null}
      */
     public static MathContext currentMathContext() {

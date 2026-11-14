@@ -60,11 +60,28 @@ public final class SquareMatrix<T>
         return new SquareMatrix<>(dimension, ring, target);
     }
 
+    /**
+     * Constructs an {@code n x n} square matrix over {@code ring} from {@code n * n} row-major elements.
+     *
+     * @param <T>      scalar ring entry type
+     * @param n        the positive matrix dimension
+     * @param ring     the scalar entry ring
+     * @param elements the {@code n * n} entries in row-major order
+     * @return an immutable {@code n x n} {@link SquareMatrix}
+     */
     @SafeVarargs
     public static <T> SquareMatrix<T> of(int n, Ring<T> ring, T... elements) {
         return validated(n, ring, elements, true);
     }
 
+    /**
+     * Constructs an {@code n x n} square matrix over {@code ring} from a square 2D array.
+     *
+     * @param <T>      scalar ring entry type
+     * @param ring     the scalar entry ring
+     * @param matrix2D non-empty {@code n x n} 2D array of entries
+     * @return an immutable {@link SquareMatrix}
+     */
     public static <T> SquareMatrix<T> of(Ring<T> ring, T[][] matrix2D) {
         Objects.requireNonNull(ring, "ring cannot be null");
         Object[] flat = MatrixOps.flatten2D(matrix2D);
@@ -76,6 +93,14 @@ public final class SquareMatrix<T>
         return validated(n, ring, flat, false);
     }
 
+    /**
+     * Constructs the {@code n x n} zero matrix over {@code ring}.
+     *
+     * @param <T>  scalar ring entry type
+     * @param n    the positive matrix dimension
+     * @param ring the scalar entry ring
+     * @return the {@code n x n} zero {@link SquareMatrix}
+     */
     public static <T> SquareMatrix<T> zeros(int n, Ring<T> ring) {
         if (n <= 0) throw new IllegalArgumentException("Dimension must be positive: " + n);
         Objects.requireNonNull(ring, "ring cannot be null");
@@ -84,6 +109,14 @@ public final class SquareMatrix<T>
         return new SquareMatrix<>(n, ring, arr);
     }
 
+    /**
+     * Constructs the {@code n x n} multiplicative identity matrix over {@code ring}.
+     *
+     * @param <T>  scalar ring entry type
+     * @param n    the positive matrix dimension
+     * @param ring the scalar entry ring
+     * @return the {@code n x n} identity {@link SquareMatrix}
+     */
     public static <T> SquareMatrix<T> identity(int n, Ring<T> ring) {
         if (n <= 0) throw new IllegalArgumentException("Dimension must be positive: " + n);
         Objects.requireNonNull(ring, "ring cannot be null");
@@ -96,6 +129,11 @@ public final class SquareMatrix<T>
         return new SquareMatrix<>(n, ring, arr);
     }
 
+    /**
+     * Returns the side dimension {@code n} of this {@code n x n} square matrix.
+     *
+     * @return the positive dimension {@code n}
+     */
     public int dimension() {
         return dimension;
     }
@@ -192,6 +230,13 @@ public final class SquareMatrix<T>
         return new SquareMatrix<>(dimension, ring, MatrixOps.multiply(ring, data, other.data, dimension, dimension, dimension));
     }
 
+    /**
+     * Multiplies this {@code n x n} square matrix on the right by an {@code n x m} {@link RectangularMatrix} ({@code m != n}),
+     * producing an {@code n x m} {@link RectangularMatrix}.
+     *
+     * @param other a rectangular matrix over the same ring with {@code other.rows() == this.dimension()}
+     * @return the {@code n x m} product {@link RectangularMatrix}
+     */
     public RectangularMatrix<T> multiply(RectangularMatrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
         checkSameRing(other.ring());
@@ -240,10 +285,22 @@ public final class SquareMatrix<T>
         return new SquareMatrix<>(dimension, ring, MatrixOps.transpose(data, dimension, dimension));
     }
 
+    /**
+     * Computes the matrix trace {@code sum_i this[i, i]} in {@link #ring()}.
+     *
+     * @return the sum of the main diagonal entries
+     */
     public T trace() {
         return MatrixOps.trace(ring, data, dimension);
     }
 
+    /**
+     * Computes the exact determinant {@code det(this)} over any {@link lock14.algebra.structure.CommutativeRing}
+     * (via LU over fields, fraction-free Bareiss elimination over Euclidean domains, or Bird's division-free
+     * algorithm over general commutative rings).
+     *
+     * @return the determinant in {@link #ring()}
+     */
     public T determinant() {
         return MatrixOps.determinant(ring, data, dimension);
     }
@@ -253,12 +310,21 @@ public final class SquareMatrix<T>
         return MatrixOps.rref(ring, data, dimension, dimension);
     }
 
+    /**
+     * Computes the partial-pivoted LU decomposition {@code P * this = L * U} when {@link #ring()} is a {@link lock14.algebra.structure.Field}.
+     *
+     * @return the {@link LuDecomposition} of this matrix
+     */
     public LuDecomposition<T> lu() {
         return MatrixOps.lu(ring, data, dimension);
     }
 
     /**
      * Solves {@code this * x = rhs} over any {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
+     *
+     * @param rhs the right-hand side vector of dimension {@link #dimension()}
+     * @return the unique solution vector {@code x}
+     * @throws NonInvertibleElementException if this matrix is singular
      */
     public Vector<T> solve(Vector<T> rhs) {
         Objects.requireNonNull(rhs, "rhs cannot be null");
@@ -274,6 +340,10 @@ public final class SquareMatrix<T>
 
     /**
      * Solves {@code this * X = rhs} for multiple right-hand sides over any {@link lock14.algebra.structure.DivisionRing}.
+     *
+     * @param rhs the right-hand side matrix with {@code rhs.rows() == this.dimension()}
+     * @return the unique solution matrix {@code X} of shape {@code dimension() x rhs.cols()}
+     * @throws NonInvertibleElementException if this matrix is singular
      */
     public Matrix<T> solve(Matrix<T> rhs) {
         Objects.requireNonNull(rhs, "rhs cannot be null");
@@ -293,6 +363,11 @@ public final class SquareMatrix<T>
             : new RectangularMatrix<>(dimension, rhs.cols(), ring, sol);
     }
 
+    /**
+     * Attempts to compute the multiplicative inverse {@code this^-1} over a {@link lock14.algebra.structure.DivisionRing}.
+     *
+     * @return an {@link Optional} containing {@code this^-1} if nonsingular, or {@link Optional#empty()} if singular
+     */
     public Optional<SquareMatrix<T>> tryInverse() {
         try {
             return Optional.of(inverse());
@@ -301,6 +376,12 @@ public final class SquareMatrix<T>
         }
     }
 
+    /**
+     * Computes the exact multiplicative inverse {@code this^-1} over a {@link lock14.algebra.structure.DivisionRing}.
+     *
+     * @return the inverse {@link SquareMatrix} {@code this^-1}
+     * @throws NonInvertibleElementException if this matrix is singular
+     */
     public SquareMatrix<T> inverse() {
         SquareMatrix<T> id = identity(dimension, ring);
         Object[] invData = MatrixOps.solve(ring, data, id.data, dimension, dimension);

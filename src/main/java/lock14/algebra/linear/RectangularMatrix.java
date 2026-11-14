@@ -63,17 +63,44 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
         return new RectangularMatrix<>(rows, cols, ring, target);
     }
 
+    /**
+     * Constructs a strictly non-square ({@code rows != cols}) matrix over {@code ring} from row-major elements.
+     *
+     * @param <T>      scalar ring entry type
+     * @param rows     the positive row count
+     * @param cols     the positive column count ({@code cols != rows})
+     * @param ring     the scalar entry ring
+     * @param elements the {@code rows * cols} entries in row-major order
+     * @return an immutable {@code rows x cols} {@link RectangularMatrix}
+     */
     @SafeVarargs
     public static <T> RectangularMatrix<T> of(int rows, int cols, Ring<T> ring, T... elements) {
         return validated(rows, cols, ring, elements, true);
     }
 
+    /**
+     * Constructs a strictly non-square matrix over {@code ring} from a 2D array.
+     *
+     * @param <T>      scalar ring entry type
+     * @param ring     the scalar entry ring
+     * @param matrix2D non-empty non-square rectangular 2D array of entries
+     * @return an immutable {@link RectangularMatrix}
+     */
     public static <T> RectangularMatrix<T> of(Ring<T> ring, T[][] matrix2D) {
         Objects.requireNonNull(ring, "ring cannot be null");
         Object[] flat = MatrixOps.flatten2D(matrix2D);
         return validated(matrix2D.length, matrix2D[0].length, ring, flat, false);
     }
 
+    /**
+     * Constructs the strictly non-square ({@code rows != cols}) zero matrix over {@code ring}.
+     *
+     * @param <T>  scalar ring entry type
+     * @param rows the positive row count
+     * @param cols the positive column count ({@code cols != rows})
+     * @param ring the scalar entry ring
+     * @return the {@code rows x cols} zero {@link RectangularMatrix}
+     */
     public static <T> RectangularMatrix<T> zeros(int rows, int cols, Ring<T> ring) {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
@@ -174,6 +201,13 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
         };
     }
 
+    /**
+     * Multiplies this rectangular matrix by {@code other}, returning a {@link SquareMatrix} when
+     * {@code this.rows() == other.cols()} or a {@link RectangularMatrix} otherwise.
+     *
+     * @param other a rectangular matrix over the same ring with {@code other.rows() == this.cols()}
+     * @return the {@code this.rows() x other.cols()} product matrix
+     */
     public Matrix<T> multiply(RectangularMatrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
         checkSameRing(other.ring);
@@ -188,6 +222,13 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
             : new RectangularMatrix<>(this.rows, other.cols, ring, res);
     }
 
+    /**
+     * Multiplies this {@code m x n} rectangular matrix on the right by an {@code n x n} {@link SquareMatrix},
+     * preserving the {@code m x n} rectangular shape.
+     *
+     * @param other an {@code n x n} square matrix over the same ring with {@code other.dimension() == this.cols()}
+     * @return the {@code m x n} product {@link RectangularMatrix}
+     */
     public RectangularMatrix<T> multiply(SquareMatrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
         checkSameRing(other.ring());

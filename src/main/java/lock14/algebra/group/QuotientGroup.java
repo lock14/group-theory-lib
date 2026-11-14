@@ -24,6 +24,16 @@ public final class QuotientGroup<T> implements FiniteGroup<Coset<T>> {
         this.cosets = cosets;
     }
 
+    /**
+     * Constructs the quotient group {@code G / N} of {@code parentGroup} modulo {@code normalSubgroup}.
+     *
+     * @param <T> the element type of the parent group {@code G}
+     * @param parentGroup the finite group {@code G}
+     * @param normalSubgroup a normal subgroup {@code N} of {@code parentGroup}
+     * @return the quotient group {@code G / N}
+     * @throws IncompatibleAlgebraException if {@code normalSubgroup} does not have {@code parentGroup} as its parent
+     * @throws IllegalArgumentException if {@code normalSubgroup} is not normal in {@code parentGroup}
+     */
     public static <T> QuotientGroup<T> of(FiniteGroup<T> parentGroup, Subgroup<T> normalSubgroup) {
         Objects.requireNonNull(parentGroup, "parentGroup cannot be null");
         Objects.requireNonNull(normalSubgroup, "normalSubgroup cannot be null");
@@ -40,14 +50,29 @@ public final class QuotientGroup<T> implements FiniteGroup<Coset<T>> {
         return new QuotientGroup<>(parentGroup, normalSubgroup, Set.copyOf(allCosets));
     }
 
+    /**
+     * Returns the ambient parent group {@code G}.
+     *
+     * @return the parent finite group {@code G}
+     */
     public FiniteGroup<T> parentGroup() {
         return parentGroup;
     }
 
+    /**
+     * Returns the normal subgroup {@code N} by which {@code G} is factored.
+     *
+     * @return the normal subgroup {@code N}
+     */
     public Subgroup<T> normalSubgroup() {
         return normalSubgroup;
     }
 
+    /**
+     * Returns the canonical surjective quotient homomorphism {@code pi: G -> G / N} mapping {@code g -> gN}.
+     *
+     * @return the canonical projection homomorphism onto {@code G / N}
+     */
     public GroupHomomorphism<T, Coset<T>> canonicalProjection() {
         return normalSubgroup::leftCoset;
     }

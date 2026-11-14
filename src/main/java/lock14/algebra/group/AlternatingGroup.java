@@ -17,6 +17,12 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
     private final int degree;
     private volatile Set<Permutation> cachedElements;
 
+    /**
+     * Constructs the alternating group {@code A_n} of degree {@code n}.
+     *
+     * @param degree the number of permuted elements {@code n} ({@code degree >= 1})
+     * @throws IllegalArgumentException if {@code degree <= 0}
+     */
     public AlternatingGroup(int degree) {
         if (degree <= 0) {
             throw new IllegalArgumentException("Degree must be positive: " + degree);
@@ -24,6 +30,11 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
         this.degree = degree;
     }
 
+    /**
+     * Returns the degree {@code n} of this alternating group {@code A_n}.
+     *
+     * @return the degree {@code n}
+     */
     public int degree() {
         return degree;
     }

@@ -18,6 +18,12 @@ public final class GaloisFields {
 
     /**
      * Constructs {@code GF(p^k) = F_p[x] / (modulus)} after verifying that {@code modulus} is irreducible over {@code F_p}.
+     *
+     * @param primeField the base prime field {@code F_p}
+     * @param irreducibleModulus an irreducible polynomial of degree {@code k >= 1} over {@code primeField}
+     * @return the finite extension field {@code GF(p^k)}
+     * @throws IllegalArgumentException if {@code irreducibleModulus} is over a different ring, has degree {@code < 1},
+     *     or is reducible over {@code primeField}
      */
     public static QuotientField<Polynomial<Residue<BigInteger>>> extension(
             QuotientField<BigInteger> primeField,
@@ -40,6 +46,11 @@ public final class GaloisFields {
     /**
      * Convenience factory defining {@code GF(p^k)} from integer polynomial coefficients in ascending degree order
      * (e.g., {@code GaloisFields.extension(2, 1, 1, 0, 1, 1, 0, 0, 0, 1)} for AES {@code GF(2^8)}).
+     *
+     * @param prime the prime characteristic {@code p}
+     * @param ascendingCoeffs integer coefficients of the irreducible modulus in ascending degree order
+     * @return the finite extension field {@code GF(p^k)}
+     * @throws IllegalArgumentException if {@code prime} is not prime or the resulting polynomial is reducible
      */
     public static QuotientField<Polynomial<Residue<BigInteger>>> extension(long prime, long... ascendingCoeffs) {
         QuotientField<BigInteger> fp = ZMod.field(prime);
@@ -54,6 +65,11 @@ public final class GaloisFields {
 
     /**
      * Rabin's deterministic polynomial-time irreducibility test over {@code F_p[x]}.
+     *
+     * @param primeField the base prime field {@code F_p}
+     * @param f the univariate polynomial over {@code primeField} to test
+     * @return {@code true} if {@code f} has degree {@code >= 1} and is irreducible over {@code primeField},
+     *     {@code false} otherwise
      */
     public static boolean isIrreducible(
             QuotientField<BigInteger> primeField,

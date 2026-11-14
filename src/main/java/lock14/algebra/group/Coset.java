@@ -23,18 +23,39 @@ public final class Coset<T> {
         this.elements = Set.copyOf(elements);
     }
 
+    /**
+     * Returns the ambient finite group {@code G} containing this coset.
+     *
+     * @return the parent finite group {@code G}
+     */
     public FiniteGroup<T> parentGroup() {
         return parentGroup;
     }
 
+    /**
+     * Returns the representative element {@code g} used when constructing this coset.
+     *
+     * @return a representative element of this coset
+     */
     public T representative() {
         return representative;
     }
 
+    /**
+     * Returns the unmodifiable set of elements belonging to this coset.
+     *
+     * @return the underlying element subset of {@code G}
+     */
     public Set<T> elements() {
         return elements;
     }
 
+    /**
+     * Checks whether the specified element belongs to this coset.
+     *
+     * @param element the group element to test
+     * @return {@code true} if {@code element} is a member of this coset, {@code false} otherwise
+     */
     public boolean contains(T element) {
         Objects.requireNonNull(element, "element cannot be null");
         return elements.contains(element);

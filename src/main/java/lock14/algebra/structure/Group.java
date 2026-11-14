@@ -14,11 +14,18 @@ public interface Group<T> extends Monoid<T> {
 
     /**
      * Returns the inverse of the given element.
+     *
+     * @param element the element to invert
+     * @return the inverse {@code element^-1}
      */
     T inverse(T element);
 
     /**
      * Combines {@code left} with the inverse of {@code right}: {@code left * right^-1}.
+     *
+     * @param left  the left operand
+     * @param right the element whose inverse is combined on the right
+     * @return the result of {@code left * right^-1}
      */
     default T remove(T left, T right) {
         return combine(left, inverse(right));
@@ -31,6 +38,10 @@ public interface Group<T> extends Monoid<T> {
 
     /**
      * Exponentiates an element to any integer power (positive, zero, or negative).
+     *
+     * @param element the base element
+     * @param n       the integer exponent (positive, zero, or negative)
+     * @return {@code element} raised to the {@code n}-th power under the group operation
      */
     default T power(T element, long n) {
         Objects.requireNonNull(element, "element cannot be null");
@@ -65,6 +76,10 @@ public interface Group<T> extends Monoid<T> {
 
     /**
      * Conjugates {@code h} by {@code g}: {@code g * h * g^-1}.
+     *
+     * @param g the conjugating element
+     * @param h the element being conjugated
+     * @return the conjugate {@code g * h * g^-1}
      */
     default T conjugate(T g, T h) {
         return combine(combine(g, h), inverse(g));
@@ -72,6 +87,10 @@ public interface Group<T> extends Monoid<T> {
 
     /**
      * Computes the group commutator of {@code a} and {@code b}: {@code a * b * a^-1 * b^-1}.
+     *
+     * @param a the first element
+     * @param b the second element
+     * @return the commutator {@code a * b * a^-1 * b^-1}
      */
     default T commutator(T a, T b) {
         return combine(combine(a, b), combine(inverse(a), inverse(b)));

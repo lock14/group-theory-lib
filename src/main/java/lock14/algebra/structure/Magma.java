@@ -21,6 +21,8 @@ public interface Magma<T> {
 
     /**
      * Converts this magma operation into a standard {@link BinaryOperator}.
+     *
+     * @return a {@link BinaryOperator} delegating to {@link #combine(Object, Object)}
      */
     default BinaryOperator<T> asBinaryOperator() {
         return this::combine;

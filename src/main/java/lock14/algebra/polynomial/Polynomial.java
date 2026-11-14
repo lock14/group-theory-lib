@@ -40,6 +40,14 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return new Polynomial<>(List.copyOf(rawCoeffs.subList(0, lastNonZero + 1)), ring);
     }
 
+    /**
+     * Constructs a polynomial {@code a_0 + a_1*x + ... + a_k*x^k} from ascending-degree coefficients.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @param coeffs coefficients in ascending degree order {@code (a_0, a_1, ...)}
+     * @return the canonical polynomial over {@code ring}
+     */
     @SafeVarargs
     public static <T> Polynomial<T> of(Ring<T> ring, T... coeffs) {
         Objects.requireNonNull(coeffs, "coeffs cannot be null");
@@ -50,15 +58,37 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return canonicalize(list, ring);
     }
 
+    /**
+     * Constructs a polynomial {@code a_0 + a_1*x + ... + a_k*x^k} from a list of ascending-degree coefficients.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @param coeffs coefficients in ascending degree order {@code [a_0, a_1, ...]}
+     * @return the canonical polynomial over {@code ring}
+     */
     public static <T> Polynomial<T> of(Ring<T> ring, List<T> coeffs) {
         return canonicalize(coeffs, ring);
     }
 
+    /**
+     * Returns the zero polynomial {@code 0} over {@code ring}.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @return the zero polynomial in {@code R[x]}
+     */
     public static <T> Polynomial<T> zero(Ring<T> ring) {
         Objects.requireNonNull(ring, "ring cannot be null");
         return new Polynomial<>(List.of(ring.zero()), ring);
     }
 
+    /**
+     * Returns the multiplicative identity polynomial {@code 1} over {@code ring}.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @return the unit polynomial {@code 1} in {@code R[x]}
+     */
     public static <T> Polynomial<T> one(Ring<T> ring) {
         Objects.requireNonNull(ring, "ring cannot be null");
         T one = ring.one();
@@ -68,6 +98,13 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return new Polynomial<>(List.of(one), ring);
     }
 
+    /**
+     * Returns the indeterminate polynomial {@code x} over {@code ring}.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @return the linear monomial {@code x} in {@code R[x]}
+     */
     public static <T> Polynomial<T> x(Ring<T> ring) {
         Objects.requireNonNull(ring, "ring cannot be null");
         T one = ring.one();
@@ -77,6 +114,16 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return new Polynomial<>(List.of(ring.zero(), one), ring);
     }
 
+    /**
+     * Constructs the monomial {@code coeff * x^degree} over {@code ring}.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @param degree the non-negative exponent of {@code x}
+     * @param coeff the monomial coefficient
+     * @return the canonical monomial {@code coeff * x^degree}
+     * @throws IllegalArgumentException if {@code degree < 0}
+     */
     public static <T> Polynomial<T> monomial(Ring<T> ring, int degree, T coeff) {
         Objects.requireNonNull(ring, "ring cannot be null");
         Objects.requireNonNull(coeff, "coeff cannot be null");
@@ -91,30 +138,69 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return new Polynomial<>(List.copyOf(list), ring);
     }
 
+    /**
+     * Constructs the constant polynomial {@code constant} of degree at most {@code 0} over {@code ring}.
+     *
+     * @param <T> the coefficient element type
+     * @param ring the coefficient ring {@code R}
+     * @param constant the scalar constant term
+     * @return the constant polynomial over {@code ring}
+     */
     public static <T> Polynomial<T> constant(Ring<T> ring, T constant) {
         return monomial(ring, 0, constant);
     }
 
+    /**
+     * Returns the canonical trimmed ascending-degree coefficient list {@code [a_0, a_1, ..., a_n]}.
+     *
+     * @return an unmodifiable list of coefficients in ascending degree order
+     */
     public List<T> coefficients() {
         return coefficients;
     }
 
+    /**
+     * Returns the underlying coefficient ring {@code R} of this polynomial.
+     *
+     * @return the coefficient ring {@code R}
+     */
     public Ring<T> ring() {
         return ring;
     }
 
+    /**
+     * Checks whether this polynomial is the zero polynomial {@code 0}.
+     *
+     * @return {@code true} if all coefficients are zero, {@code false} otherwise
+     */
     public boolean isZero() {
         return coefficients.size() == 1 && ring.isZero(coefficients.getFirst());
     }
 
+    /**
+     * Checks whether this polynomial is the multiplicative identity {@code 1}.
+     *
+     * @return {@code true} if this polynomial equals {@code 1} in {@code R[x]}, {@code false} otherwise
+     */
     public boolean isOne() {
         return coefficients.size() == 1 && ring.isOne(coefficients.getFirst());
     }
 
+    /**
+     * Returns the degree of this polynomial, or {@code -1} if this is the zero polynomial.
+     *
+     * @return the highest degree with a non-zero coefficient, or {@code -1} for {@code 0}
+     */
     public int degree() {
         return isZero() ? -1 : coefficients.size() - 1;
     }
 
+    /**
+     * Returns the coefficient {@code a_deg} of {@code x^deg} (returning {@code ring().zero()} if out of range).
+     *
+     * @param deg the exponent index
+     * @return the coefficient of {@code x^deg}
+     */
     public T coefficient(int deg) {
         if (deg < 0 || deg >= coefficients.size()) {
             return ring.zero();
@@ -122,12 +208,20 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return coefficients.get(deg);
     }
 
+    /**
+     * Returns the leading (highest-degree) coefficient of this polynomial ({@code 0} for the zero polynomial).
+     *
+     * @return the leading coefficient
+     */
     public T leadingCoefficient() {
         return coefficients.getLast();
     }
 
     /**
      * Evaluates this polynomial at {@code x} via Horner's method ({@code a_0 + a_1*x + ... + a_n*x^n}).
+     *
+     * @param x the point in {@code R} at which to evaluate
+     * @return the value {@code P(x)} in {@code R}
      */
     public T evaluate(T x) {
         Objects.requireNonNull(x, "x cannot be null");
@@ -141,6 +235,12 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return result;
     }
 
+    /**
+     * Left-multiplies every coefficient of this polynomial by {@code scalar}.
+     *
+     * @param scalar the scalar factor in {@code R}
+     * @return the scaled polynomial {@code scalar * P(x)}
+     */
     public Polynomial<T> scale(T scalar) {
         Objects.requireNonNull(scalar, "scalar cannot be null");
         if (isZero() || ring.isZero(scalar)) {
@@ -208,6 +308,11 @@ public final class Polynomial<T> implements RingElement<Polynomial<T>> {
         return canonicalize(res, ring);
     }
 
+    /**
+     * Computes the formal algebraic derivative {@code P'(x) = sum_{i=1}^n (i * a_i) x^{i-1}}.
+     *
+     * @return the formal derivative polynomial {@code P'(x)}
+     */
     public Polynomial<T> derivative() {
         if (degree() <= 0) {
             return zero(ring);

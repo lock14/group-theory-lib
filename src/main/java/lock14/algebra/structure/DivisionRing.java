@@ -23,8 +23,11 @@ public interface DivisionRing<T> extends Ring<T> {
     T reciprocal(T a);
 
     /**
-     * Total invertibility query returning {@link Optional#of} the reciprocal when {@code a} is non-zero,
+     * Total invertibility query returning {@link Optional#of(Object)} the reciprocal when {@code a} is non-zero,
      * or {@link Optional#empty()} when {@code a} is zero.
+     *
+     * @param a the element to invert
+     * @return an {@link Optional} containing {@code a^-1} if {@code a} is non-zero, or {@link Optional#empty()} if zero
      */
     default Optional<T> tryReciprocal(T a) {
         Objects.requireNonNull(a, "element cannot be null");
@@ -33,6 +36,11 @@ public interface DivisionRing<T> extends Ring<T> {
 
     /**
      * Computes right division: {@code a * b^-1}.
+     *
+     * @param a the dividend
+     * @param b the right divisor (must be non-zero)
+     * @return the right quotient {@code a * b^-1}
+     * @throws NonInvertibleElementException if {@code b} is zero
      */
     default T divide(T a, T b) {
         Objects.requireNonNull(a, "dividend cannot be null");
@@ -45,6 +53,11 @@ public interface DivisionRing<T> extends Ring<T> {
 
     /**
      * Computes left division: {@code b^-1 * a}.
+     *
+     * @param a the dividend
+     * @param b the left divisor (must be non-zero)
+     * @return the left quotient {@code b^-1 * a}
+     * @throws NonInvertibleElementException if {@code b} is zero
      */
     default T divideLeft(T a, T b) {
         Objects.requireNonNull(a, "dividend cannot be null");
@@ -57,6 +70,9 @@ public interface DivisionRing<T> extends Ring<T> {
 
     /**
      * Every non-zero element of a division ring is a unit.
+     *
+     * @param element the element to test
+     * @return {@code true} if {@code element} is non-zero, {@code false} otherwise
      */
     default boolean isUnit(T element) {
         return !isZero(element);
@@ -64,6 +80,8 @@ public interface DivisionRing<T> extends Ring<T> {
 
     /**
      * Views the non-zero elements of this division ring as a multiplicative {@link Group}.
+     *
+     * @return a {@link Group} view over the non-zero elements under multiplication
      */
     default Group<T> asMultiplicativeGroupOfUnits() {
         record UnitsGroupView<E>(DivisionRing<E> ring) implements Group<E> {

@@ -10,30 +10,66 @@ import lock14.algebra.structure.Field;
  * The Commutative Polynomial Ring {@code R[x]} over a {@link CommutativeRing} {@code R}.
  *
  * @param <T> coefficient element type
+ * @param coefficientRing the underlying commutative ring of coefficients
  */
 public record PolynomialRing<T>(CommutativeRing<T> coefficientRing) implements CommutativeRing<Polynomial<T>> {
 
+    /**
+     * Validates that the coefficient ring is non-null.
+     *
+     * @param coefficientRing the underlying commutative ring of coefficients
+     */
     public PolynomialRing {
         Objects.requireNonNull(coefficientRing, "coefficientRing cannot be null");
     }
 
+    /**
+     * Constructs the Euclidean domain {@code F[x]} of univariate polynomials over a {@link Field} {@code F}.
+     *
+     * @param <T> the scalar field element type
+     * @param coefficientField the field of scalar coefficients
+     * @return the polynomial Euclidean domain {@code F[x]}
+     */
     public static <T> PolynomialEuclideanDomain<T> overField(Field<T> coefficientField) {
         return new PolynomialEuclideanDomain<>(coefficientField);
     }
 
+    /**
+     * Constructs a polynomial in {@code R[x]} from ascending-degree coefficients.
+     *
+     * @param coeffs coefficients in ascending degree order {@code (a_0, a_1, ...)}
+     * @return the canonical polynomial over {@link #coefficientRing()}
+     */
     @SafeVarargs
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientRing, coeffs);
     }
 
+    /**
+     * Constructs a polynomial in {@code R[x]} from a list of ascending-degree coefficients.
+     *
+     * @param coeffs coefficients in ascending degree order {@code [a_0, a_1, ...]}
+     * @return the canonical polynomial over {@link #coefficientRing()}
+     */
     public Polynomial<T> of(List<T> coeffs) {
         return Polynomial.of(coefficientRing, coeffs);
     }
 
+    /**
+     * Returns the indeterminate polynomial {@code x} in {@code R[x]}.
+     *
+     * @return the linear monomial {@code x}
+     */
     public Polynomial<T> x() {
         return Polynomial.x(coefficientRing);
     }
 
+    /**
+     * Embeds a scalar {@code c} as a constant polynomial in {@code R[x]}.
+     *
+     * @param c the scalar constant term
+     * @return the constant polynomial {@code c}
+     */
     public Polynomial<T> constant(T c) {
         return Polynomial.constant(coefficientRing, c);
     }

@@ -20,6 +20,10 @@ public interface GroupHomomorphism<A, B> extends Function<A, B> {
 
     /**
      * Composes this homomorphism with {@code after}: {@code x -> after.apply(this.apply(x))}.
+     *
+     * @param <C>   the codomain element type of {@code after}
+     * @param after the group homomorphism to apply after this homomorphism
+     * @return the composed group homomorphism {@code after . this}
      */
     default <C> GroupHomomorphism<A, C> andThen(GroupHomomorphism<B, C> after) {
         Objects.requireNonNull(after, "after cannot be null");
@@ -28,6 +32,10 @@ public interface GroupHomomorphism<A, B> extends Function<A, B> {
 
     /**
      * Computes the carrier of {@code ker(phi) = { g in G | phi(g) = e_H }} for a finite domain group.
+     *
+     * @param domain   the finite domain group {@code G}
+     * @param codomain the codomain group {@code H}
+     * @return an unmodifiable set of elements in {@code domain} mapped to {@code codomain.identity()}
      */
     default Set<A> kernelElements(FiniteGroup<A> domain, Group<B> codomain) {
         Objects.requireNonNull(domain, "domain cannot be null");
@@ -44,6 +52,9 @@ public interface GroupHomomorphism<A, B> extends Function<A, B> {
 
     /**
      * Computes the carrier of {@code im(phi) = { phi(g) | g in G }} for a finite domain group.
+     *
+     * @param domain the finite domain group {@code G}
+     * @return an unmodifiable set of image elements in the codomain
      */
     default Set<B> imageElements(FiniteGroup<A> domain) {
         Objects.requireNonNull(domain, "domain cannot be null");
@@ -56,6 +67,10 @@ public interface GroupHomomorphism<A, B> extends Function<A, B> {
 
     /**
      * Verifies exhaustively that {@code phi(a * b) == phi(a) * phi(b)} across a finite group {@code G}.
+     *
+     * @param domain   the finite domain group {@code G}
+     * @param codomain the codomain group {@code H}
+     * @return {@code true} if this map preserves identity and group multiplication for all pairs in {@code domain}, {@code false} otherwise
      */
     default boolean isValidHomomorphism(FiniteGroup<A> domain, Group<B> codomain) {
         Objects.requireNonNull(domain, "domain cannot be null");

@@ -27,6 +27,13 @@ public final class Subgroup<T> implements FiniteGroup<T> {
     /**
      * Validates that {@code carrier} is non-empty, contained in {@code parentGroup}, and closed
      * under multiplication and inversion.
+     *
+     * @param <T> the group element type
+     * @param parentGroup the enclosing finite group {@code G}
+     * @param carrier the candidate subset of {@code G}
+     * @return the validated subgroup {@code H <= G}
+     * @throws IllegalArgumentException if {@code carrier} is empty, outside {@code parentGroup},
+     *     or not closed under multiplication and inversion
      */
     public static <T> Subgroup<T> of(FiniteGroup<T> parentGroup, Set<T> carrier) {
         Objects.requireNonNull(parentGroup, "parentGroup cannot be null");
@@ -54,6 +61,11 @@ public final class Subgroup<T> implements FiniteGroup<T> {
 
     /**
      * Generates the subgroup {@code <generators>} inside {@code parentGroup}.
+     *
+     * @param <T> the group element type
+     * @param parentGroup the enclosing finite group {@code G}
+     * @param generators the generating elements in {@code G}
+     * @return the smallest subgroup of {@code parentGroup} containing {@code generators}
      */
     public static <T> Subgroup<T> generate(FiniteGroup<T> parentGroup, Collection<T> generators) {
         Objects.requireNonNull(parentGroup, "parentGroup cannot be null");
@@ -62,6 +74,13 @@ public final class Subgroup<T> implements FiniteGroup<T> {
 
     /**
      * Constructs the normal kernel subgroup {@code ker(hom) <= domain}.
+     *
+     * @param <A> the domain group element type
+     * @param <B> the codomain group element type
+     * @param hom the group homomorphism {@code domain -> codomain}
+     * @param domain the finite domain group
+     * @param codomain the codomain group
+     * @return the kernel subgroup {@code ker(hom)} in {@code domain}
      */
     public static <A, B> Subgroup<A> kernel(GroupHomomorphism<A, B> hom, FiniteGroup<A> domain, Group<B> codomain) {
         Objects.requireNonNull(hom, "hom cannot be null");
@@ -70,12 +89,24 @@ public final class Subgroup<T> implements FiniteGroup<T> {
 
     /**
      * Constructs the image subgroup {@code im(hom) <= codomain}.
+     *
+     * @param <A> the domain group element type
+     * @param <B> the codomain group element type
+     * @param hom the group homomorphism {@code domain -> codomain}
+     * @param domain the finite domain group
+     * @param codomain the finite codomain group
+     * @return the image subgroup {@code im(hom)} in {@code codomain}
      */
     public static <A, B> Subgroup<B> image(GroupHomomorphism<A, B> hom, FiniteGroup<A> domain, FiniteGroup<B> codomain) {
         Objects.requireNonNull(hom, "hom cannot be null");
         return of(codomain, hom.imageElements(domain));
     }
 
+    /**
+     * Returns the ambient parent group {@code G} in which this subgroup {@code H <= G} is embedded.
+     *
+     * @return the parent finite group {@code G}
+     */
     public FiniteGroup<T> parentGroup() {
         return parentGroup;
     }
@@ -87,6 +118,8 @@ public final class Subgroup<T> implements FiniteGroup<T> {
 
     /**
      * Returns the index {@code [G : H] = |G| / |H|} by Lagrange's theorem.
+     *
+     * @return the index of this subgroup in its parent group
      */
     public long index() {
         return parentGroup.order() / order();
@@ -94,6 +127,8 @@ public final class Subgroup<T> implements FiniteGroup<T> {
 
     /**
      * Checks whether {@code H} is a normal subgroup of {@code G} ({@code g h g^-1 in H} for all {@code g in G, h in H}).
+     *
+     * @return {@code true} if {@code H} is normal in {@code G}, {@code false} otherwise
      */
     public boolean isNormal() {
         for (T g : parentGroup.elements()) {
@@ -106,6 +141,13 @@ public final class Subgroup<T> implements FiniteGroup<T> {
         return true;
     }
 
+    /**
+     * Constructs the left coset {@code gH = { g * h | h in H }} of this subgroup in its parent group.
+     *
+     * @param g the coset representative in the parent group {@code G}
+     * @return the left coset {@code gH}
+     * @throws IncompatibleAlgebraException if {@code g} does not belong to {@link #parentGroup()}
+     */
     public Coset<T> leftCoset(T g) {
         Objects.requireNonNull(g, "g cannot be null");
         if (!parentGroup.contains(g)) {
@@ -118,6 +160,13 @@ public final class Subgroup<T> implements FiniteGroup<T> {
         return new Coset<>(parentGroup, g, cosetElems);
     }
 
+    /**
+     * Constructs the right coset {@code Hg = { h * g | h in H }} of this subgroup in its parent group.
+     *
+     * @param g the coset representative in the parent group {@code G}
+     * @return the right coset {@code Hg}
+     * @throws IncompatibleAlgebraException if {@code g} does not belong to {@link #parentGroup()}
+     */
     public Coset<T> rightCoset(T g) {
         Objects.requireNonNull(g, "g cannot be null");
         if (!parentGroup.contains(g)) {

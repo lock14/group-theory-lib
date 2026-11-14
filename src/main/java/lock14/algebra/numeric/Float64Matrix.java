@@ -26,6 +26,12 @@ public final class Float64Matrix implements AutoCloseable {
     private final boolean ownsArena;
     private final MemorySegment segment;
 
+    /**
+     * Allocates a zero-initialized {@code rows x cols} off-heap matrix backed by a newly owned confined {@link Arena}.
+     *
+     * @param rows the positive row count
+     * @param cols the positive column count
+     */
     public Float64Matrix(int rows, int cols) {
         validateDimensions(rows, cols);
         long byteSize = computeByteSize(rows, cols);
@@ -42,6 +48,13 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Allocates a zero-initialized {@code rows x cols} off-heap matrix within an externally managed {@link Arena}.
+     *
+     * @param rows          the positive row count
+     * @param cols          the positive column count
+     * @param externalArena the caller-managed arena from which off-heap memory is allocated
+     */
     public Float64Matrix(int rows, int cols, Arena externalArena) {
         Objects.requireNonNull(externalArena, "externalArena cannot be null");
         validateDimensions(rows, cols);
@@ -53,6 +66,12 @@ public final class Float64Matrix implements AutoCloseable {
         this.segment = externalArena.allocate(byteSize, ValueLayout.JAVA_DOUBLE.byteAlignment());
     }
 
+    /**
+     * Creates an off-heap matrix initialized from a non-empty rectangular 2D {@code double} array.
+     *
+     * @param values non-empty rectangular 2D array of entries
+     * @return a newly allocated {@link Float64Matrix}
+     */
     public static Float64Matrix of(double[][] values) {
         Objects.requireNonNull(values, "values cannot be null");
         if (values.length == 0 || values[0] == null || values[0].length == 0) {
@@ -78,6 +97,14 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Creates a {@code rows x cols} off-heap matrix initialized from flat row-major values.
+     *
+     * @param rows           the positive row count
+     * @param cols           the positive column count
+     * @param rowMajorValues the {@code rows * cols} entries in row-major order
+     * @return a newly allocated {@link Float64Matrix}
+     */
     public static Float64Matrix of(int rows, int cols, double... rowMajorValues) {
         Objects.requireNonNull(rowMajorValues, "rowMajorValues cannot be null");
         validateDimensions(rows, cols);
@@ -99,6 +126,12 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Creates the {@code size x size} off-heap multiplicative identity matrix.
+     *
+     * @param size the positive square dimension
+     * @return a newly allocated {@code size x size} identity {@link Float64Matrix}
+     */
     public static Float64Matrix identity(int size) {
         if (size <= 0) {
             throw new IllegalArgumentException("Identity size must be positive, got: " + size);
@@ -127,18 +160,38 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Returns the number of rows in this matrix.
+     *
+     * @return the positive row count
+     */
     public int rows() {
         return rows;
     }
 
+    /**
+     * Returns the number of columns in this matrix.
+     *
+     * @return the positive column count
+     */
     public int cols() {
         return cols;
     }
 
+    /**
+     * Returns {@code true} if {@code rows() == cols()}.
+     *
+     * @return {@code true} if this matrix is square
+     */
     public boolean isSquare() {
         return rows == cols;
     }
 
+    /**
+     * Returns {@code true} if the underlying {@link MemorySegment} scope is still alive.
+     *
+     * @return {@code true} if this matrix has not been closed
+     */
     public boolean isOpen() {
         return segment.scope().isAlive();
     }
@@ -155,16 +208,35 @@ public final class Float64Matrix implements AutoCloseable {
         return (long) row * cols + col;
     }
 
+    /**
+     * Reads the entry at zero-based {@code (row, col)}.
+     *
+     * @param row zero-based row index in {@code [0, rows())}
+     * @param col zero-based column index in {@code [0, cols())}
+     * @return the {@code double} value at {@code (row, col)}
+     */
     public double get(int row, int col) {
         ensureOpen();
         return segment.getAtIndex(ValueLayout.JAVA_DOUBLE, index(row, col));
     }
 
+    /**
+     * Writes {@code value} into zero-based {@code (row, col)}, canonicalizing {@code -0.0} to {@code +0.0}.
+     *
+     * @param row   zero-based row index in {@code [0, rows())}
+     * @param col   zero-based column index in {@code [0, cols())}
+     * @param value the {@code double} value to store
+     */
     public void set(int row, int col, double value) {
         ensureOpen();
         segment.setAtIndex(ValueLayout.JAVA_DOUBLE, index(row, col), value == 0.0 ? 0.0 : value);
     }
 
+    /**
+     * Copies this off-heap matrix into a newly allocated on-heap 2D {@code double} array.
+     *
+     * @return a {@code rows() x cols()} 2D array copy
+     */
     public double[][] toArray2D() {
         ensureOpen();
         double[][] out = new double[rows][cols];
@@ -175,6 +247,12 @@ public final class Float64Matrix implements AutoCloseable {
         return out;
     }
 
+    /**
+     * Allocates and computes the entrywise sum {@code this + other}.
+     *
+     * @param other an open matrix of identical dimensions
+     * @return a newly allocated sum {@link Float64Matrix}
+     */
     public Float64Matrix add(Float64Matrix other) {
         Objects.requireNonNull(other, "other cannot be null");
         ensureOpen();
@@ -199,6 +277,12 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Allocates and computes the entrywise difference {@code this - other}.
+     *
+     * @param other an open matrix of identical dimensions
+     * @return a newly allocated difference {@link Float64Matrix}
+     */
     public Float64Matrix subtract(Float64Matrix other) {
         Objects.requireNonNull(other, "other cannot be null");
         ensureOpen();
@@ -223,6 +307,12 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Allocates and computes the scalar multiple {@code factor * this}.
+     *
+     * @param factor the scalar multiplier
+     * @return a newly allocated scaled {@link Float64Matrix}
+     */
     public Float64Matrix scale(double factor) {
         ensureOpen();
         Float64Matrix result = new Float64Matrix(rows, cols);
@@ -241,6 +331,9 @@ public final class Float64Matrix implements AutoCloseable {
 
     /**
      * Multiplies {@code this * other} using a cache-friendly {@code i-k-j} row-major loop.
+     *
+     * @param other an open matrix with {@code other.rows() == this.cols()}
+     * @return a newly allocated {@code this.rows() x other.cols()} product {@link Float64Matrix}
      */
     public Float64Matrix multiply(Float64Matrix other) {
         Objects.requireNonNull(other, "other cannot be null");
@@ -279,6 +372,12 @@ public final class Float64Matrix implements AutoCloseable {
         }
     }
 
+    /**
+     * Computes the matrix-vector product {@code this * vector}.
+     *
+     * @param vector an array of length {@link #cols()}
+     * @return a newly allocated array of length {@link #rows()}
+     */
     public double[] multiplyVector(double[] vector) {
         Objects.requireNonNull(vector, "vector cannot be null");
         ensureOpen();
@@ -299,6 +398,11 @@ public final class Float64Matrix implements AutoCloseable {
         return out;
     }
 
+    /**
+     * Allocates and computes the transpose {@code this^T} of shape {@code cols() x rows()}.
+     *
+     * @return a newly allocated transposed {@link Float64Matrix}
+     */
     public Float64Matrix transpose() {
         ensureOpen();
         Float64Matrix result = new Float64Matrix(cols, rows);
@@ -335,6 +439,9 @@ public final class Float64Matrix implements AutoCloseable {
 
     /**
      * Computes the determinant of a square matrix using Gaussian elimination with partial pivoting.
+     *
+     * @return the approximate determinant
+     * @throws UndefinedOperationException if this matrix is not square
      */
     public double determinant() {
         ensureOpen();
@@ -388,6 +495,8 @@ public final class Float64Matrix implements AutoCloseable {
     /**
      * Solves {@code A * x = b} using Gaussian elimination with partial pivoting.
      *
+     * @param b the right-hand side vector of length {@link #rows()}
+     * @return the solution vector {@code x}
      * @throws NonInvertibleElementException if {@code A} is singular within the active tolerance
      */
     public double[] solve(double[] b) {
@@ -460,6 +569,7 @@ public final class Float64Matrix implements AutoCloseable {
     /**
      * Computes {@code A^-1} via partial-pivoted Gauss-Jordan elimination.
      *
+     * @return a newly allocated inverse {@link Float64Matrix}
      * @throws NonInvertibleElementException if {@code A} is numerically singular within the active tolerance
      */
     public Float64Matrix inverse() {
@@ -523,6 +633,13 @@ public final class Float64Matrix implements AutoCloseable {
         return Float64Matrix.of(inv);
     }
 
+    /**
+     * Returns {@code true} if {@code other} has the same dimensions and every corresponding entry differs by at most {@code epsilon}.
+     *
+     * @param other   an open matrix to compare against
+     * @param epsilon the non-negative finite entrywise tolerance
+     * @return {@code true} if all entries match within {@code epsilon}
+     */
     public boolean approxEquals(Float64Matrix other, double epsilon) {
         Objects.requireNonNull(other, "other cannot be null");
         if (Double.isNaN(epsilon) || Double.isInfinite(epsilon) || epsilon < 0.0) {
@@ -546,6 +663,12 @@ public final class Float64Matrix implements AutoCloseable {
         return true;
     }
 
+    /**
+     * Returns {@code true} if {@code other} has the same dimensions and every corresponding entry differs by at most {@link NumericContext#currentEpsilon()}.
+     *
+     * @param other an open matrix to compare against
+     * @return {@code true} if approximately equal within the active tolerance
+     */
     public boolean approxEquals(Float64Matrix other) {
         return approxEquals(other, NumericContext.currentEpsilon());
     }

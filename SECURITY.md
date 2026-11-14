@@ -4,7 +4,8 @@
 
 | Version | Supported          | JDK Target |
 | :------ | :----------------- | :--------- |
-| `2.x`   | :white_check_mark: | Java 25+   |
+| `3.x`   | :white_check_mark: | Java 25+   |
+| `2.x`   | :x:                | Java 25    |
 | `< 2.0` | :x:                | Java 8     |
 
 ---

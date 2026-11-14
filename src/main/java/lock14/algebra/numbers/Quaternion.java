@@ -15,11 +15,25 @@ import lock14.algebra.structure.IntegralDomain;
  * (for example, {@link Rationals#FIELD} for the exact rational division ring {@code H(Q)} or {@link Integers#RING}
  * for Lipschitz integer quaternions).
  *
- * @param <T> scalar ring element type
+ * @param <T>        scalar ring element type
+ * @param w          the scalar (real) component
+ * @param x          the {@code i} component
+ * @param y          the {@code j} component
+ * @param z          the {@code k} component
+ * @param scalarRing the underlying commutative scalar ring
  */
 public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
     implements RingElement<Quaternion<T>> {
 
+    /**
+     * Validates that all quaternion components and {@code scalarRing} are non-null.
+     *
+     * @param w          the scalar (real) component
+     * @param x          the {@code i} component
+     * @param y          the {@code j} component
+     * @param z          the {@code k} component
+     * @param scalarRing the underlying commutative scalar ring
+     */
     public Quaternion {
         Objects.requireNonNull(w, "w cannot be null");
         Objects.requireNonNull(x, "x cannot be null");
@@ -28,27 +42,70 @@ public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
         Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
     }
 
+    /**
+     * Constructs a quaternion {@code w + x*i + y*j + z*k} over {@code ring}.
+     *
+     * @param <T>  scalar ring element type
+     * @param ring the underlying commutative scalar ring
+     * @param w    the scalar (real) component
+     * @param x    the {@code i} component
+     * @param y    the {@code j} component
+     * @param z    the {@code k} component
+     * @return the quaternion {@code w + x*i + y*j + z*k}
+     */
     public static <T> Quaternion<T> of(CommutativeRing<T> ring, T w, T x, T y, T z) {
         return new Quaternion<>(w, x, y, z, ring);
     }
 
+    /**
+     * Embeds a scalar {@code w + 0*i + 0*j + 0*k} into the quaternion algebra over {@code ring}.
+     *
+     * @param <T>  scalar ring element type
+     * @param ring the underlying commutative scalar ring
+     * @param w    the scalar component
+     * @return the scalar quaternion {@code w}
+     */
     public static <T> Quaternion<T> scalar(CommutativeRing<T> ring, T w) {
         T zero = ring.zero();
         return new Quaternion<>(w, zero, zero, zero, ring);
     }
 
+    /**
+     * Constructs an exact rational quaternion {@code w + x*i + y*j + z*k} in {@code H(Q)} from integer components.
+     *
+     * @param w the integer scalar component
+     * @param x the integer {@code i} component
+     * @param y the integer {@code j} component
+     * @param z the integer {@code k} component
+     * @return the rational quaternion {@code w + x*i + y*j + z*k}
+     */
     public static Quaternion<Rational> ofRational(long w, long x, long y, long z) {
         return new Quaternion<>(Rational.of(w), Rational.of(x), Rational.of(y), Rational.of(z), Rationals.FIELD);
     }
 
+    /**
+     * Returns {@code true} if all four components are zero in {@code scalarRing}.
+     *
+     * @return {@code true} if this quaternion equals {@code 0}
+     */
     public boolean isZero() {
         return scalarRing.isZero(w) && scalarRing.isZero(x) && scalarRing.isZero(y) && scalarRing.isZero(z);
     }
 
+    /**
+     * Returns {@code true} if {@code w} is one and {@code x, y, z} are zero in {@code scalarRing}.
+     *
+     * @return {@code true} if this quaternion equals {@code 1}
+     */
     public boolean isOne() {
         return scalarRing.isOne(w) && scalarRing.isZero(x) && scalarRing.isZero(y) && scalarRing.isZero(z);
     }
 
+    /**
+     * Returns the Hamilton conjugate {@code w - x*i - y*j - z*k}.
+     *
+     * @return the conjugate quaternion
+     */
     public Quaternion<T> conjugate() {
         return new Quaternion<>(
             w,
@@ -59,6 +116,11 @@ public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
         );
     }
 
+    /**
+     * Computes the reduced norm (squared norm) {@code N(q) = w^2 + x^2 + y^2 + z^2} in {@code scalarRing}.
+     *
+     * @return the squared norm {@code w^2 + x^2 + y^2 + z^2}
+     */
     public T normSq() {
         T ww = scalarRing.multiply(w, w);
         T xx = scalarRing.multiply(x, x);
@@ -67,6 +129,12 @@ public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
         return scalarRing.add(scalarRing.add(ww, xx), scalarRing.add(yy, zz));
     }
 
+    /**
+     * Scales all four components of this quaternion by {@code scalar}.
+     *
+     * @param scalar the scalar multiplier in {@code scalarRing}
+     * @return the scaled quaternion
+     */
     public Quaternion<T> scale(T scalar) {
         Objects.requireNonNull(scalar, "scalar cannot be null");
         return new Quaternion<>(
@@ -135,12 +203,25 @@ public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
         return new Quaternion<>(newW, newX, newY, newZ, scalarRing);
     }
 
+    /**
+     * Computes the exact multiplicative inverse {@code conjugate() / normSq()}.
+     *
+     * @return the multiplicative inverse {@code this^-1}
+     * @throws NonInvertibleElementException if this quaternion is not invertible
+     * @throws UndefinedOperationException   if {@code scalarRing} cannot invert a non-trivial unit norm
+     */
     public Quaternion<T> reciprocal() {
         return tryReciprocal().orElseThrow(
             () -> new NonInvertibleElementException("Quaternion element is not invertible: " + this)
         );
     }
 
+    /**
+     * Attempts to compute the exact multiplicative inverse of this quaternion.
+     *
+     * @return an {@link Optional} containing {@code this^-1} if invertible, or {@link Optional#empty()} if non-invertible
+     * @throws UndefinedOperationException if {@code scalarRing} is not a {@link Field} and {@code normSq()} is a unit other than {@code +/-1}
+     */
     public Optional<Quaternion<T>> tryReciprocal() {
         T nSq = normSq();
         if (scalarRing instanceof Field<T> field) {

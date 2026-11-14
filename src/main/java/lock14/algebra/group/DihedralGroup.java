@@ -12,7 +12,21 @@ import lock14.algebra.structure.FiniteGroup;
  */
 public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
 
+    /**
+     * Canonical element {@code r^rotation * s^eps} of a {@link DihedralGroup}, where {@code eps = 1}
+     * if {@code reflected} is {@code true} and {@code eps = 0} otherwise.
+     *
+     * @param rotation the non-negative rotation exponent {@code k}
+     * @param reflected {@code true} if composed with the reflection {@code s}, {@code false} for a pure rotation
+     */
     public record Element(int rotation, boolean reflected) {
+        /**
+         * Validates that the canonical rotation exponent is non-negative.
+         *
+         * @param rotation the non-negative rotation exponent {@code k}
+         * @param reflected {@code true} if composed with the reflection {@code s}, {@code false} otherwise
+         * @throws IllegalArgumentException if {@code rotation < 0}
+         */
         public Element {
             if (rotation < 0) {
                 throw new IllegalArgumentException("Canonical rotation exponent must be non-negative: " + rotation);
@@ -31,6 +45,12 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
     private final int polygonSides;
     private final Set<Element> elements;
 
+    /**
+     * Constructs the dihedral group {@code D_n} of symmetries of a regular {@code n}-gon (having order {@code 2n}).
+     *
+     * @param polygonSides the number of polygon sides {@code n} ({@code polygonSides >= 1})
+     * @throws IllegalArgumentException if {@code polygonSides <= 0}
+     */
     public DihedralGroup(int polygonSides) {
         if (polygonSides <= 0) {
             throw new IllegalArgumentException("Polygon sides n must be positive: " + polygonSides);
@@ -46,14 +66,29 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
         this.elements = Set.copyOf(elems);
     }
 
+    /**
+     * Returns the parameter {@code n} (number of polygon sides) of this dihedral group {@code D_n}.
+     *
+     * @return the number of polygon sides {@code n}
+     */
     public int polygonSides() {
         return polygonSides;
     }
 
+    /**
+     * Returns the canonical rotation generator {@code r} of order {@code n}.
+     *
+     * @return the rotation generator element {@code r}
+     */
     public Element rotationGenerator() {
         return new Element(1 % polygonSides, false);
     }
 
+    /**
+     * Returns the canonical reflection generator {@code s} of order {@code 2}.
+     *
+     * @return the reflection generator element {@code s}
+     */
     public Element reflectionGenerator() {
         return new Element(0, true);
     }

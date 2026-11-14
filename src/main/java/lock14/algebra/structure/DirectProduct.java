@@ -11,6 +11,15 @@ public final class DirectProduct {
 
     private DirectProduct() {}
 
+    /**
+     * Constructs the direct product {@link Monoid} {@code left x right} with component-wise combination and identity.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor monoid
+     * @param right the right factor monoid
+     * @return the direct product monoid over {@code Pair<A, B>}
+     */
     public static <A, B> Monoid<Pair<A, B>> monoid(Monoid<A> left, Monoid<B> right) {
         Objects.requireNonNull(left, "left monoid cannot be null");
         Objects.requireNonNull(right, "right monoid cannot be null");
@@ -28,6 +37,15 @@ public final class DirectProduct {
         return new ProductMonoid<>(left, right);
     }
 
+    /**
+     * Constructs the direct product {@link Group} {@code left x right} with component-wise group operations.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor group
+     * @param right the right factor group
+     * @return the direct product group over {@code Pair<A, B>}
+     */
     public static <A, B> Group<Pair<A, B>> group(Group<A> left, Group<B> right) {
         Objects.requireNonNull(left, "left group cannot be null");
         Objects.requireNonNull(right, "right group cannot be null");
@@ -50,6 +68,15 @@ public final class DirectProduct {
         return new ProductGroup<>(left, right);
     }
 
+    /**
+     * Constructs the direct product {@link AbelianGroup} {@code left x right} of two abelian groups.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor abelian group
+     * @param right the right factor abelian group
+     * @return the direct product abelian group over {@code Pair<A, B>}
+     */
     public static <A, B> AbelianGroup<Pair<A, B>> abelianGroup(AbelianGroup<A> left, AbelianGroup<B> right) {
         Objects.requireNonNull(left, "left abelian group cannot be null");
         Objects.requireNonNull(right, "right abelian group cannot be null");
@@ -72,6 +99,15 @@ public final class DirectProduct {
         return new ProductAbelianGroup<>(left, right);
     }
 
+    /**
+     * Constructs the direct product {@link FiniteGroup} {@code left x right} whose carrier set is the Cartesian product.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor finite group
+     * @param right the right factor finite group
+     * @return the direct product finite group over {@code Pair<A, B>} of order {@code left.order() * right.order()}
+     */
     public static <A, B> FiniteGroup<Pair<A, B>> finiteGroup(FiniteGroup<A> left, FiniteGroup<B> right) {
         Objects.requireNonNull(left, "left finite group cannot be null");
         Objects.requireNonNull(right, "right finite group cannot be null");
@@ -102,6 +138,15 @@ public final class DirectProduct {
         return new ProductFiniteGroup<>(left, right, immutableElements);
     }
 
+    /**
+     * Constructs the direct product {@link Ring} {@code left x right} with component-wise ring arithmetic.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor ring
+     * @param right the right factor ring
+     * @return the direct product ring over {@code Pair<A, B>}
+     */
     public static <A, B> Ring<Pair<A, B>> ring(Ring<A> left, Ring<B> right) {
         Objects.requireNonNull(left, "left ring cannot be null");
         Objects.requireNonNull(right, "right ring cannot be null");
@@ -144,6 +189,15 @@ public final class DirectProduct {
         return new ProductRing<>(left, right);
     }
 
+    /**
+     * Constructs the direct product {@link CommutativeRing} {@code left x right} of two commutative rings.
+     *
+     * @param <A>   left carrier type
+     * @param <B>   right carrier type
+     * @param left  the left factor commutative ring
+     * @param right the right factor commutative ring
+     * @return the direct product commutative ring over {@code Pair<A, B>}
+     */
     public static <A, B> CommutativeRing<Pair<A, B>> commutativeRing(CommutativeRing<A> left, CommutativeRing<B> right) {
         Objects.requireNonNull(left, "left commutative ring cannot be null");
         Objects.requireNonNull(right, "right commutative ring cannot be null");

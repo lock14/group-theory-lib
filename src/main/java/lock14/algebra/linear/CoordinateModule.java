@@ -13,10 +13,18 @@ import lock14.algebra.structure.Ring;
 /**
  * The Free Left Coordinate Module {@code R^n} of dimension {@code n} over a scalar {@link Ring} {@code R}.
  *
- * @param <T> scalar ring element type
+ * @param <T>        scalar ring element type
+ * @param dimension  the positive coordinate dimension {@code n}
+ * @param scalarRing the underlying scalar ring {@code R}
  */
 public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements LeftModule<Vector<T>, T> {
 
+    /**
+     * Validates that {@code dimension} is positive and {@code scalarRing} is non-null.
+     *
+     * @param dimension  the positive coordinate dimension
+     * @param scalarRing the underlying scalar ring
+     */
     public CoordinateModule {
         if (dimension <= 0) {
             throw new IllegalArgumentException("Module dimension must be positive: " + dimension);
@@ -24,6 +32,12 @@ public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements 
         Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
     }
 
+    /**
+     * Constructs a vector in this coordinate module from exactly {@link #dimension()} coordinates.
+     *
+     * @param elements the coordinate entries
+     * @return the coordinate vector in {@code R^n}
+     */
     @SafeVarargs
     public final Vector<T> of(T... elements) {
         Objects.requireNonNull(elements, "elements cannot be null");
@@ -33,6 +47,12 @@ public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements 
         return Vector.of(scalarRing, elements);
     }
 
+    /**
+     * Returns the {@code index}-th standard unit basis vector {@code e_index} (with {@code 1} at {@code index} and {@code 0} elsewhere).
+     *
+     * @param index zero-based basis index in {@code [0, dimension())}
+     * @return the standard basis vector {@code e_index}
+     */
     public Vector<T> unitBasis(int index) {
         if (index < 0 || index >= dimension) {
             throw new IndexOutOfBoundsException("Basis index " + index + " out of bounds for dimension " + dimension);
@@ -43,6 +63,11 @@ public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements 
         return new Vector<>(dimension, scalarRing, arr);
     }
 
+    /**
+     * Returns the ordered standard basis {@code (e_0, e_1, ..., e_{n-1})} of this free module.
+     *
+     * @return an unmodifiable list of the {@link #dimension()} standard basis vectors
+     */
     public List<Vector<T>> standardBasis() {
         List<Vector<T>> basis = new ArrayList<>(dimension);
         for (int i = 0; i < dimension; i++) {
