@@ -3,17 +3,17 @@ package lock14.algebra.laws;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import org.junit.jupiter.api.Test;
-import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.EuclideanDomain;
 import lock14.algebra.structure.Field;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public abstract class FieldLaws<T> extends CommutativeRingLaws<T> {
+public abstract class FieldLaws<T> extends EuclideanDomainLaws<T> {
 
     protected abstract Field<T> field();
 
     @Override
-    protected CommutativeRing<T> commutativeRing() {
+    protected EuclideanDomain<T> euclideanDomain() {
         return field();
     }
 

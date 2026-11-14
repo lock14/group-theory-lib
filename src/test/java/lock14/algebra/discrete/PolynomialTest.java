@@ -1,14 +1,16 @@
 package lock14.algebra.discrete;
 
-import java.util.List;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
 import lock14.algebra.laws.CommutativeRingLaws;
+import lock14.algebra.laws.RingLaws;
+import lock14.algebra.numbers.Quaternion;
 import lock14.algebra.numbers.Rational;
 import lock14.algebra.numbers.RationalField;
 import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.Ring;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PolynomialTest extends CommutativeRingLaws<Polynomial<Rational>> {
@@ -26,6 +28,25 @@ public class PolynomialTest extends CommutativeRingLaws<Polynomial<Rational>> {
                 .map(Rational::of);
         return rationals.list().ofMinSize(1).ofMaxSize(5)
                 .map(coeffs -> Polynomial.of(RationalField.INSTANCE, coeffs));
+    }
+
+    public static class NonCommutativePolynomialRingTest extends RingLaws<Polynomial<Quaternion>> {
+
+        private final GeneralPolynomialRing<Quaternion> genPolyRing = new GeneralPolynomialRing<>(Quaternion.ring());
+
+        @Override
+        protected Ring<Polynomial<Quaternion>> ring() {
+            return genPolyRing;
+        }
+
+        @Provide
+        Arbitrary<Polynomial<Quaternion>> elements() {
+            Arbitrary<Integer> ints = Arbitraries.integers().between(-5, 5);
+            Arbitrary<Quaternion> quats = ints.list().ofSize(4)
+                    .map(c -> Quaternion.of(c.get(0), c.get(1), c.get(2), c.get(3)));
+            return quats.list().ofMinSize(1).ofMaxSize(4)
+                    .map(coeffs -> Polynomial.of(Quaternion.ring(), coeffs));
+        }
     }
 
     @Test
@@ -48,6 +69,17 @@ public class PolynomialTest extends CommutativeRingLaws<Polynomial<Rational>> {
 
         Polynomial<Rational> expected = Polynomial.of(RationalField.INSTANCE, Rational.of(-1), Rational.of(0), Rational.of(1));
         assertThat(prod).isEqualTo(expected);
+    }
+
+    @Test
+    public void testNonCommutativePolynomialMultiplication() {
+        // In H[x], (i*x) * j = (i*j)*x = k*x, whereas j * (i*x) = (j*i)*x = -k*x
+        GeneralPolynomialRing<Quaternion> hPoly = new GeneralPolynomialRing<>(Quaternion.ring());
+        Polynomial<Quaternion> ix = Polynomial.of(Quaternion.ring(), Quaternion.ZERO, Quaternion.I);
+        Polynomial<Quaternion> j = Polynomial.constant(Quaternion.ring(), Quaternion.J);
+
+        assertThat(hPoly.multiply(ix, j)).isEqualTo(Polynomial.of(Quaternion.ring(), Quaternion.ZERO, Quaternion.K));
+        assertThat(hPoly.multiply(j, ix)).isEqualTo(Polynomial.of(Quaternion.ring(), Quaternion.ZERO, Quaternion.K.negate()));
     }
 
     @Test

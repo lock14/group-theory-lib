@@ -2,14 +2,13 @@ package lock14.algebra.discrete;
 
 import java.util.Objects;
 import lock14.algebra.structure.CommutativeRing;
-import lock14.algebra.structure.Ring;
 
 /**
- * The Polynomial Ring R[x] over a base Ring R.
+ * The Commutative Polynomial Ring R[x] over a base {@link CommutativeRing} R.
  *
  * @param <T> the coefficient type
  */
-public record PolynomialRing<T>(Ring<T> coefficientRing) implements CommutativeRing<Polynomial<T>> {
+public record PolynomialRing<T>(CommutativeRing<T> coefficientRing) implements CommutativeRing<Polynomial<T>> {
 
     public PolynomialRing {
         Objects.requireNonNull(coefficientRing, "coefficientRing cannot be null");

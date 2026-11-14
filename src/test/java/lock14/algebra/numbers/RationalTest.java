@@ -9,6 +9,7 @@ import lock14.algebra.laws.FieldLaws;
 import lock14.algebra.structure.Field;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 public class RationalTest extends FieldLaws<Rational> {
 
@@ -65,5 +66,20 @@ public class RationalTest extends FieldLaws<Rational> {
         assertThat(r1).isLessThan(r2);
         assertThat(r2).isGreaterThan(r1);
         assertThat(r1).isEqualByComparingTo(Rational.of(2, 6));
+    }
+
+    @Test
+    public void testDoubleValueExtremeBitLengths() {
+        // Coprime numerator & denominator both > Double.MAX_VALUE (~1.8e308)
+        BigInteger num = BigInteger.TEN.pow(400).add(BigInteger.ONE);
+        BigInteger den = BigInteger.TEN.pow(400).multiply(BigInteger.TWO).add(BigInteger.ONE);
+        Rational r = Rational.of(num, den);
+        assertThat(r.numerator()).isEqualTo(num);
+        assertThat(r.doubleValue()).isCloseTo(0.5, within(1e-15));
+        assertThat(r.negate().doubleValue()).isCloseTo(-0.5, within(1e-15));
+
+        // Subnormal double quotient where denominator > Double.MAX_VALUE
+        Rational subnormal = Rational.of(BigInteger.ONE, BigInteger.ONE.shiftLeft(1050));
+        assertThat(subnormal.doubleValue()).isEqualTo(Math.scalb(1.0, -1050));
     }
 }

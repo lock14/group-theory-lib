@@ -14,20 +14,33 @@ public final class NativeDoubleMatrix implements AutoCloseable {
     private final int rows;
     private final int cols;
     private final Arena arena;
+    private final boolean ownsArena;
     private final MemorySegment segment;
 
     public NativeDoubleMatrix(int rows, int cols) {
-        this(rows, cols, Arena.ofConfined());
+        this(rows, cols, createConfinedArena(rows, cols), true);
     }
 
     public NativeDoubleMatrix(int rows, int cols, Arena arena) {
+        this(rows, cols, arena, false);
+    }
+
+    private NativeDoubleMatrix(int rows, int cols, Arena arena, boolean ownsArena) {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
         }
         this.rows = rows;
         this.cols = cols;
         this.arena = Objects.requireNonNull(arena, "arena cannot be null");
+        this.ownsArena = ownsArena;
         this.segment = arena.allocate(ValueLayout.JAVA_DOUBLE, (long) rows * cols);
+    }
+
+    private static Arena createConfinedArena(int rows, int cols) {
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
+        }
+        return Arena.ofConfined();
     }
 
     public int rows() {
@@ -53,24 +66,57 @@ public final class NativeDoubleMatrix implements AutoCloseable {
     }
 
     public NativeDoubleMatrix add(NativeDoubleMatrix other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
         if (this.rows != other.rows || this.cols != other.cols) {
             throw new DimensionMismatchException(this.rows, this.cols, other.rows, other.cols);
         }
-        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, this.cols, this.arena);
+        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, this.cols);
+        computeAdd(other, result);
+        return result;
+    }
+
+    public NativeDoubleMatrix add(NativeDoubleMatrix other, Arena targetArena) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        Objects.requireNonNull(targetArena, "targetArena cannot be null");
+        if (this.rows != other.rows || this.cols != other.cols) {
+            throw new DimensionMismatchException(this.rows, this.cols, other.rows, other.cols);
+        }
+        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, this.cols, targetArena);
+        computeAdd(other, result);
+        return result;
+    }
+
+    private void computeAdd(NativeDoubleMatrix other, NativeDoubleMatrix result) {
         long len = (long) rows * cols;
         for (long i = 0; i < len; i++) {
             double a = this.segment.getAtIndex(ValueLayout.JAVA_DOUBLE, i);
             double b = other.segment.getAtIndex(ValueLayout.JAVA_DOUBLE, i);
             result.segment.setAtIndex(ValueLayout.JAVA_DOUBLE, i, a + b);
         }
-        return result;
     }
 
     public NativeDoubleMatrix multiply(NativeDoubleMatrix other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
         if (this.cols != other.rows) {
             throw new DimensionMismatchException("Cannot multiply " + rows + "x" + cols + " with " + other.rows + "x" + other.cols);
         }
-        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, other.cols, this.arena);
+        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, other.cols);
+        computeMultiply(other, result);
+        return result;
+    }
+
+    public NativeDoubleMatrix multiply(NativeDoubleMatrix other, Arena targetArena) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        Objects.requireNonNull(targetArena, "targetArena cannot be null");
+        if (this.cols != other.rows) {
+            throw new DimensionMismatchException("Cannot multiply " + rows + "x" + cols + " with " + other.rows + "x" + other.cols);
+        }
+        NativeDoubleMatrix result = new NativeDoubleMatrix(this.rows, other.cols, targetArena);
+        computeMultiply(other, result);
+        return result;
+    }
+
+    private void computeMultiply(NativeDoubleMatrix other, NativeDoubleMatrix result) {
         int resRows = this.rows;
         int resCols = other.cols;
         int inner = this.cols;
@@ -92,11 +138,12 @@ public final class NativeDoubleMatrix implements AutoCloseable {
                 }
             }
         }
-        return result;
     }
 
     @Override
     public void close() {
-        arena.close();
+        if (ownsArena && arena.scope().isAlive()) {
+            arena.close();
+        }
     }
 }

@@ -11,7 +11,5 @@ public interface IntegralDomain<T> extends CommutativeRing<T> {
     /**
      * Checks if the given element is a unit (has a multiplicative inverse in the ring).
      */
-    default boolean isUnit(T element) {
-        return isOne(element);
-    }
+    boolean isUnit(T element);
 }

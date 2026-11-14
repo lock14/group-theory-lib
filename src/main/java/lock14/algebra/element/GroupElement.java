@@ -20,7 +20,6 @@ public interface GroupElement<E extends GroupElement<E>> {
     /**
      * Combines this element with the inverse of another: {@code this * other^-1}.
      */
-    @SuppressWarnings("unchecked")
     default E remove(E other) {
         return combine(other.inverse());
     }

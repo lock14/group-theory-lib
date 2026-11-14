@@ -57,7 +57,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.16.0</version>
         <configuration>
-          <release>25</release>
+          <release>${maven.compiler.release}</release>
           <compilerArgs>
             <arg>--enable-preview</arg>
           </compilerArgs>
@@ -68,16 +68,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.6.1</version>
         <configuration>
-          <argLine>--enable-preview</argLine>
+          <argLine>@{argLine} --enable-preview</argLine>
         </configuration>
       </plugin>
-      <!--
-        TODO: Re-enable JaCoCo once version 0.8.13+ is published supporting Java 25 bytecode (class file major version 69).
-        When enabling, update surefire argLine above to include @{argLine}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.13</version>
+        <version>0.8.16</version>
         <executions>
           <execution>
             <goals>
@@ -93,7 +90,6 @@
           </execution>
         </executions>
       </plugin>
-      -->
     </plugins>
   </build>
 </project>

@@ -16,6 +16,12 @@ public final class AlgebraicContext {
 
     private AlgebraicContext() {}
 
+    public static BigInteger currentModulus() {
+        return MODULUS.orElseThrow(
+            () -> new IllegalStateException("No ambient modulus bound in AlgebraicContext.MODULUS")
+        );
+    }
+
     public static double currentEpsilon() {
         return EPSILON.orElse(DEFAULT_EPSILON);
     }

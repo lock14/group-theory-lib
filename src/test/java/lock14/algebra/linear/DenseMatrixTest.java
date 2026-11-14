@@ -54,22 +54,44 @@ public class DenseMatrixTest {
     }
 
     @Test
-    public void testTransposeAndTrace() {
+    public void testTransposeAndSquareTrace() {
         Rational[][] arr = {
             {Rational.of(1), Rational.of(2), Rational.of(3)},
             {Rational.of(4), Rational.of(5), Rational.of(6)},
             {Rational.of(7), Rational.of(8), Rational.of(9)}
         };
         DenseMatrix<Rational> a = DenseMatrix.of(field, arr);
+        SquareMatrix<Rational> sq = a.asSquareMatrix();
 
-        // Trace of a: 1 + 5 + 9 = 15
-        assertThat(a.trace()).isEqualTo(Rational.of(15));
+        // Trace of sq: 1 + 5 + 9 = 15
+        assertThat(sq.trace()).isEqualTo(Rational.of(15));
 
         // (A^T)^T = A
         assertThat(a.transpose().transpose()).isEqualTo(a);
 
         // Trace linearity: tr(2A) = 2 tr(A)
-        assertThat(a.scale(Rational.of(2)).trace()).isEqualTo(Rational.of(30));
+        assertThat(sq.scale(Rational.of(2)).trace()).isEqualTo(Rational.of(30));
+    }
+
+    @Test
+    public void testDefensiveArrayCloningInConstructorsAndAccessors() {
+        Object[] input = new Object[] {
+            Rational.ONE, Rational.ZERO,
+            Rational.ZERO, Rational.ONE
+        };
+        DenseMatrix<Rational> dm = new DenseMatrix<>(2, 2, field, input);
+        SquareMatrix<Rational> sm = new SquareMatrix<>(2, field, input);
+
+        // External mutation of input array must not leak into matrices
+        input[0] = Rational.of(99);
+        assertThat(dm.get(0, 0)).isEqualTo(Rational.ONE);
+        assertThat(sm.get(0, 0)).isEqualTo(Rational.ONE);
+
+        // Mutating array returned by record data() accessor must not leak either
+        dm.data()[0] = Rational.of(77);
+        sm.data()[0] = Rational.of(88);
+        assertThat(dm.get(0, 0)).isEqualTo(Rational.ONE);
+        assertThat(sm.get(0, 0)).isEqualTo(Rational.ONE);
     }
 
     @Test

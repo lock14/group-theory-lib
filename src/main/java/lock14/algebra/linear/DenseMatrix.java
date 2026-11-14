@@ -28,6 +28,11 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
                 "Element array length (" + data.length + ") does not match matrix dimensions (" + rows + "x" + cols + ")"
             );
         }
+        Object[] copy = new Object[data.length];
+        for (int i = 0; i < data.length; i++) {
+            copy[i] = Objects.requireNonNull(data[i], "Matrix element cannot be null at index " + i);
+        }
+        data = copy;
     }
 
     @SafeVarargs
@@ -36,11 +41,7 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         if (elements.length != rows * cols) {
             throw new DimensionMismatchException("Element array length (" + elements.length + ") does not match expected " + (rows * cols));
         }
-        Object[] copy = new Object[elements.length];
-        for (int i = 0; i < elements.length; i++) {
-            copy[i] = Objects.requireNonNull(elements[i], "Matrix element cannot be null at index " + i);
-        }
-        return new DenseMatrix<>(rows, cols, ring, copy);
+        return new DenseMatrix<>(rows, cols, ring, elements);
     }
 
     public static <T> DenseMatrix<T> zeros(int rows, int cols, Ring<T> ring) {
@@ -79,6 +80,15 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
     }
 
     @Override
+    public Object[] data() {
+        return data.clone();
+    }
+
+    Object[] rawData() {
+        return data;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public T get(int r, int c) {
         if (r < 0 || r >= rows || c < 0 || c >= cols) {
@@ -87,6 +97,7 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         return (T) data[r * cols + c];
     }
 
+    @Override
     public DenseMatrix<T> with(int r, int c, T val) {
         Objects.requireNonNull(val, "val cannot be null");
         get(r, c); // Bounds check
@@ -97,6 +108,7 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
 
     public DenseMatrix<T> add(DenseMatrix<T> other) {
         checkSameShape(other);
+        checkSameRing(other.ring);
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.add(ring, data, other.data));
     }
 
@@ -106,17 +118,50 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
 
     public DenseMatrix<T> subtract(DenseMatrix<T> other) {
         checkSameShape(other);
+        checkSameRing(other.ring);
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.subtract(ring, data, other.data));
     }
 
     public DenseMatrix<T> multiply(DenseMatrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
+        checkSameRing(other.ring);
         if (this.cols != other.rows) {
             throw new DimensionMismatchException(
                 "Cannot multiply matrix " + rows + "x" + cols + " with " + other.rows + "x" + other.cols
             );
         }
         return new DenseMatrix<>(this.rows, other.cols, ring, MatrixOps.multiply(ring, data, other.data, this.rows, this.cols, other.cols));
+    }
+
+    @Override
+    public DenseMatrix<T> multiply(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        checkSameRing(other.ring());
+        if (this.cols != other.rows()) {
+            throw new DimensionMismatchException(
+                "Cannot multiply matrix " + rows + "x" + cols + " with " + other.rows() + "x" + other.cols()
+            );
+        }
+        Object[] otherData = switch (other) {
+            case DenseMatrix<T> dm -> dm.data;
+            case SquareMatrix<T> sm -> sm.rawData();
+        };
+        return new DenseMatrix<>(this.rows, other.cols(), ring, MatrixOps.multiply(ring, data, otherData, this.rows, this.cols, other.cols()));
+    }
+
+    @Override
+    public Vector<T> multiply(Vector<T> vector) {
+        Objects.requireNonNull(vector, "vector cannot be null");
+        checkSameRing(vector.ring());
+        if (this.cols != vector.dimension()) {
+            throw new DimensionMismatchException(
+                "Cannot multiply matrix " + rows + "x" + cols + " with vector of dimension " + vector.dimension()
+            );
+        }
+        if (this.rows <= 0) {
+            throw new IllegalArgumentException("Resulting vector dimension must be positive, but matrix has 0 rows");
+        }
+        return new Vector<>(this.rows, MatrixOps.multiplyColumnVector(ring, data, vector.rawData(), this.rows, this.cols), ring);
     }
 
     public DenseMatrix<T> scale(T scalar) {
@@ -130,18 +175,13 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
     }
 
     @Override
-    public T trace() {
-        return MatrixOps.trace(ring, data, rows, cols);
-    }
-
-    @Override
     public List<T> row(int r) {
         if (r < 0 || r >= rows) throw new IndexOutOfBoundsException("Row " + r + " out of bounds");
         List<T> res = new ArrayList<>(cols);
         for (int c = 0; c < cols; c++) {
             res.add(get(r, c));
         }
-        return res;
+        return List.copyOf(res);
     }
 
     @Override
@@ -151,7 +191,7 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         for (int r = 0; r < rows; r++) {
             res.add(get(r, c));
         }
-        return res;
+        return List.copyOf(res);
     }
 
     @Override
@@ -173,6 +213,12 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         Objects.requireNonNull(other, "other matrix cannot be null");
         if (this.rows != other.rows || this.cols != other.cols) {
             throw new DimensionMismatchException(this.rows, this.cols, other.rows, other.cols);
+        }
+    }
+
+    private void checkSameRing(Ring<T> otherRing) {
+        if (!Objects.equals(this.ring, otherRing)) {
+            throw new IllegalArgumentException("Cannot operate on matrices/vectors over different rings");
         }
     }
 

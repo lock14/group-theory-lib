@@ -27,6 +27,11 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         if (data.length != dimension * dimension) {
             throw new DimensionMismatchException("Element count " + data.length + " does not match square dimension " + dimension + "x" + dimension);
         }
+        Object[] copy = new Object[data.length];
+        for (int i = 0; i < data.length; i++) {
+            copy[i] = Objects.requireNonNull(data[i], "Matrix element cannot be null at index " + i);
+        }
+        data = copy;
     }
 
     @SafeVarargs
@@ -35,11 +40,7 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         if (elements.length != n * n) {
             throw new DimensionMismatchException("Element count " + elements.length + " does not match expected " + (n * n));
         }
-        Object[] copy = new Object[elements.length];
-        for (int i = 0; i < elements.length; i++) {
-            copy[i] = Objects.requireNonNull(elements[i], "Matrix element cannot be null at index " + i);
-        }
-        return new SquareMatrix<>(n, ring, copy);
+        return new SquareMatrix<>(n, ring, elements);
     }
 
     public static <T> SquareMatrix<T> zeros(int n, Ring<T> ring) {
@@ -68,7 +69,16 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
             throw new IllegalArgumentException("Provided 2D array is not square (" + n + "x" + (n == 0 ? 0 : matrix2D[0].length) + ")");
         }
         DenseMatrix<T> dense = DenseMatrix.of(ring, matrix2D);
-        return new SquareMatrix<>(n, ring, dense.data());
+        return new SquareMatrix<>(n, ring, dense.rawData());
+    }
+
+    @Override
+    public Object[] data() {
+        return data.clone();
+    }
+
+    Object[] rawData() {
+        return data;
     }
 
     @Override
@@ -91,8 +101,18 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     }
 
     @Override
+    public SquareMatrix<T> with(int r, int c, T val) {
+        Objects.requireNonNull(val, "val cannot be null");
+        get(r, c); // Bounds check
+        Object[] copy = data.clone();
+        copy[r * dimension + c] = val;
+        return new SquareMatrix<>(dimension, ring, copy);
+    }
+
+    @Override
     public SquareMatrix<T> add(SquareMatrix<T> other) {
         checkSameDimension(other);
+        checkSameRing(other.ring);
         return new SquareMatrix<>(dimension, ring, MatrixOps.add(ring, data, other.data));
     }
 
@@ -104,13 +124,47 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     @Override
     public SquareMatrix<T> subtract(SquareMatrix<T> other) {
         checkSameDimension(other);
+        checkSameRing(other.ring);
         return new SquareMatrix<>(dimension, ring, MatrixOps.subtract(ring, data, other.data));
     }
 
     @Override
     public SquareMatrix<T> multiply(SquareMatrix<T> other) {
         checkSameDimension(other);
+        checkSameRing(other.ring);
         return new SquareMatrix<>(dimension, ring, MatrixOps.multiply(ring, data, other.data, dimension, dimension, dimension));
+    }
+
+    public DenseMatrix<T> multiply(DenseMatrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        checkSameRing(other.ring());
+        if (this.dimension != other.rows()) {
+            throw new DimensionMismatchException(
+                "Cannot multiply matrix " + dimension + "x" + dimension + " with " + other.rows() + "x" + other.cols()
+            );
+        }
+        return new DenseMatrix<>(this.dimension, other.cols(), ring, MatrixOps.multiply(ring, data, other.rawData(), this.dimension, this.dimension, other.cols()));
+    }
+
+    @Override
+    public Matrix<T> multiply(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        return switch (other) {
+            case SquareMatrix<T> sm -> multiply(sm);
+            case DenseMatrix<T> dm -> multiply(dm);
+        };
+    }
+
+    @Override
+    public Vector<T> multiply(Vector<T> vector) {
+        Objects.requireNonNull(vector, "vector cannot be null");
+        checkSameRing(vector.ring());
+        if (this.dimension != vector.dimension()) {
+            throw new DimensionMismatchException(
+                "Cannot multiply matrix " + dimension + "x" + dimension + " with vector of dimension " + vector.dimension()
+            );
+        }
+        return new Vector<>(this.dimension, MatrixOps.multiplyColumnVector(ring, data, vector.rawData(), this.dimension, this.dimension), ring);
     }
 
     public SquareMatrix<T> scale(T scalar) {
@@ -123,9 +177,11 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         return new SquareMatrix<>(dimension, ring, MatrixOps.transpose(data, dimension, dimension));
     }
 
-    @Override
+    /**
+     * Computes the trace (sum of main diagonal elements) of this square matrix.
+     */
     public T trace() {
-        return MatrixOps.trace(ring, data, dimension, dimension);
+        return MatrixOps.trace(ring, data, dimension);
     }
 
     public T determinant() {
@@ -143,7 +199,7 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         for (int c = 0; c < dimension; c++) {
             res.add(get(r, c));
         }
-        return res;
+        return List.copyOf(res);
     }
 
     @Override
@@ -153,7 +209,7 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         for (int r = 0; r < dimension; r++) {
             res.add(get(r, c));
         }
-        return res;
+        return List.copyOf(res);
     }
 
     @Override
@@ -172,6 +228,12 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         Objects.requireNonNull(other, "other matrix cannot be null");
         if (this.dimension != other.dimension) {
             throw new DimensionMismatchException(this.dimension, this.dimension, other.dimension, other.dimension);
+        }
+    }
+
+    private void checkSameRing(Ring<T> otherRing) {
+        if (!Objects.equals(this.ring, otherRing)) {
+            throw new IllegalArgumentException("Cannot operate on matrices/vectors over different rings");
         }
     }
 
