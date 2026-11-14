@@ -1,6 +1,8 @@
 package lock14.algebra.numbers;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.Objects;
 import lock14.algebra.element.FieldElement;
 import lock14.algebra.structure.Field;
@@ -74,7 +76,15 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
     }
 
     public double doubleValue() {
-        return numerator.doubleValue() / denominator.doubleValue();
+        if (isZero()) {
+            return 0.0;
+        }
+        if (numerator.bitLength() <= 53 && denominator.bitLength() <= 53) {
+            return numerator.doubleValue() / denominator.doubleValue();
+        }
+        return new BigDecimal(numerator)
+            .divide(new BigDecimal(denominator), MathContext.DECIMAL128)
+            .doubleValue();
     }
 
     @Override

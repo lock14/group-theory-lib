@@ -2,12 +2,20 @@ package lock14.algebra.numbers;
 
 import java.util.Objects;
 import lock14.algebra.element.RingElement;
+import lock14.algebra.structure.Ring;
 
 /**
  * An immutable Hamilton Quaternion (w + xi + yj + zk) over {@code double}.
  * Quaternions form a non-commutative division ring (skew-field) H.
  */
 public record Quaternion(double w, double x, double y, double z) implements RingElement<Quaternion> {
+
+    public Quaternion {
+        w = (w == 0.0) ? 0.0 : w;
+        x = (x == 0.0) ? 0.0 : x;
+        y = (y == 0.0) ? 0.0 : y;
+        z = (z == 0.0) ? 0.0 : z;
+    }
 
     public static final Quaternion ZERO = new Quaternion(0.0, 0.0, 0.0, 0.0);
     public static final Quaternion ONE = new Quaternion(1.0, 0.0, 0.0, 0.0);
@@ -25,6 +33,10 @@ public record Quaternion(double w, double x, double y, double z) implements Ring
 
     public static Quaternion vector(double x, double y, double z) {
         return new Quaternion(0.0, x, y, z);
+    }
+
+    public static Ring<Quaternion> ring() {
+        return QuaternionRing.INSTANCE;
     }
 
     public boolean isZero() {
@@ -107,6 +119,44 @@ public record Quaternion(double w, double x, double y, double z) implements Ring
 
     @Override
     public String toString() {
-        return String.format("%.4f + %.4fi + %.4fj + %.4fk", w, x, y, z);
+        if (isZero()) {
+            return "0.0";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (w != 0.0) {
+            sb.append(w);
+        }
+        appendImaginaryTerm(sb, x, "i");
+        appendImaginaryTerm(sb, y, "j");
+        appendImaginaryTerm(sb, z, "k");
+        return sb.toString();
+    }
+
+    private static void appendImaginaryTerm(StringBuilder sb, double coeff, String basis) {
+        if (coeff == 0.0) {
+            return;
+        }
+        if (sb.isEmpty()) {
+            if (coeff == 1.0) {
+                sb.append(basis);
+            } else if (coeff == -1.0) {
+                sb.append('-').append(basis);
+            } else {
+                sb.append(coeff).append(basis);
+            }
+        } else if (coeff < 0.0) {
+            double abs = Math.abs(coeff);
+            sb.append(" - ");
+            if (abs != 1.0) {
+                sb.append(abs);
+            }
+            sb.append(basis);
+        } else {
+            sb.append(" + ");
+            if (coeff != 1.0) {
+                sb.append(coeff);
+            }
+            sb.append(basis);
+        }
     }
 }

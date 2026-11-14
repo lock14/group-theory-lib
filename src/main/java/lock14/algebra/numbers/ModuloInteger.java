@@ -33,17 +33,11 @@ public record ModuloInteger(BigInteger value, BigInteger modulus) implements Rin
     }
 
     public static ModuloInteger of(long value) {
-        BigInteger ambient = AlgebraicContext.MODULUS.orElseThrow(
-            () -> new IllegalStateException("No ambient modulus bound in AlgebraicContext.MODULUS")
-        );
-        return of(BigInteger.valueOf(value), ambient);
+        return of(BigInteger.valueOf(value), AlgebraicContext.currentModulus());
     }
 
     public static ModuloInteger of(BigInteger value) {
-        BigInteger ambient = AlgebraicContext.MODULUS.orElseThrow(
-            () -> new IllegalStateException("No ambient modulus bound in AlgebraicContext.MODULUS")
-        );
-        return of(value, ambient);
+        return of(value, AlgebraicContext.currentModulus());
     }
 
     public static ModuloInteger zero(long modulus) {
@@ -117,7 +111,9 @@ public record ModuloInteger(BigInteger value, BigInteger modulus) implements Rin
             return one(modulus);
         }
         if (exponent < 0) {
-            return reciprocal().power(-exponent);
+            ModuloInteger inv = reciprocal();
+            BigInteger positiveExp = BigInteger.valueOf(exponent).negate();
+            return new ModuloInteger(inv.value.modPow(positiveExp, this.modulus), this.modulus);
         }
         return new ModuloInteger(this.value.modPow(BigInteger.valueOf(exponent), this.modulus), this.modulus);
     }

@@ -9,6 +9,11 @@ import lock14.algebra.structure.Field;
  */
 public record Complex(double real, double imaginary) implements FieldElement<Complex> {
 
+    public Complex {
+        real = (real == 0.0) ? 0.0 : real;
+        imaginary = (imaginary == 0.0) ? 0.0 : imaginary;
+    }
+
     public static final Complex ZERO = new Complex(0.0, 0.0);
     public static final Complex ONE = new Complex(1.0, 0.0);
     public static final Complex I = new Complex(0.0, 1.0);
@@ -144,9 +149,17 @@ public record Complex(double real, double imaginary) implements FieldElement<Com
 
     public Complex pow(Complex exponent) {
         Objects.requireNonNull(exponent, "exponent cannot be null");
+        if (Double.isNaN(exponent.real) || Double.isNaN(exponent.imaginary)) {
+            return new Complex(Double.NaN, Double.NaN);
+        }
         if (isZero()) {
-            if (exponent.isZero()) return ONE;
-            return ZERO;
+            if (exponent.isZero()) {
+                return ONE;
+            }
+            if (exponent.real > 0.0) {
+                return ZERO;
+            }
+            throw new ArithmeticException("Division by zero or undefined complex power for zero base with exponent: " + exponent);
         }
         return this.log().multiply(exponent).exp();
     }

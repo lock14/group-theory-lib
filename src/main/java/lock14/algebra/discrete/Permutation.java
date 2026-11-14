@@ -132,11 +132,11 @@ public record Permutation(int[] mapping) implements GroupElement<Permutation> {
                     curr = mapping[curr];
                 }
                 if (cycle.size() > 1) {
-                    cycleList.add(cycle);
+                    cycleList.add(List.copyOf(cycle));
                 }
             }
         }
-        return cycleList;
+        return List.copyOf(cycleList);
     }
 
     @Override
