@@ -18,7 +18,8 @@ public class RealFieldTest extends ApproximateFieldLaws<Double> {
 
     @Override
     protected double distance(Double a, Double b) {
-        return Math.abs(a - b);
+        double scale = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
+        return Math.abs(a - b) / scale;
     }
 
     @Override
