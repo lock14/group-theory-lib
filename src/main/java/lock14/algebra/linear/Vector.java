@@ -137,9 +137,6 @@ public record Vector<T>(int dimension, Object[] data, Ring<T> ring) implements M
                 "Cannot multiply vector of dimension " + dimension + " with matrix " + matrix.rows() + "x" + matrix.cols()
             );
         }
-        if (matrix.cols() <= 0) {
-            throw new IllegalArgumentException("Resulting vector dimension must be positive, but matrix has 0 columns");
-        }
         Object[] matData = switch (matrix) {
             case DenseMatrix<T> dm -> dm.rawData();
             case SquareMatrix<T> sm -> sm.rawData();

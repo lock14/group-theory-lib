@@ -6,17 +6,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Gatherers;
 import java.util.stream.Stream;
+import lock14.algebra.element.ModuleElement;
 import lock14.algebra.element.RingElement;
 import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.structure.Ring;
 
 /**
- * An immutable n x n Square Matrix over a Ring R.
+ * An immutable {@code n x n} Square Matrix over a {@link Ring} R.
  *
  * @param <T> the entry type in Ring R
  */
 public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
-    implements Matrix<T>, RingElement<SquareMatrix<T>> {
+    implements Matrix<T>, RingElement<SquareMatrix<T>>, ModuleElement<SquareMatrix<T>, T> {
 
     public SquareMatrix {
         if (dimension <= 0) {
@@ -24,7 +25,13 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         }
         Objects.requireNonNull(ring, "Ring cannot be null");
         Objects.requireNonNull(data, "Data cannot be null");
-        if (data.length != dimension * dimension) {
+        int expectedLength;
+        try {
+            expectedLength = Math.multiplyExact(dimension, dimension);
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException("Matrix dimension overflows array capacity: " + dimension, ex);
+        }
+        if (data.length != expectedLength) {
             throw new DimensionMismatchException("Element count " + data.length + " does not match square dimension " + dimension + "x" + dimension);
         }
         Object[] copy = new Object[data.length];
@@ -37,16 +44,13 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     @SafeVarargs
     public static <T> SquareMatrix<T> of(int n, Ring<T> ring, T... elements) {
         Objects.requireNonNull(elements, "Elements cannot be null");
-        if (elements.length != n * n) {
-            throw new DimensionMismatchException("Element count " + elements.length + " does not match expected " + (n * n));
-        }
         return new SquareMatrix<>(n, ring, elements);
     }
 
     public static <T> SquareMatrix<T> zeros(int n, Ring<T> ring) {
         if (n <= 0) throw new IllegalArgumentException("Dimension must be positive: " + n);
         Objects.requireNonNull(ring, "ring cannot be null");
-        Object[] arr = new Object[n * n];
+        Object[] arr = new Object[Math.multiplyExact(n, n)];
         Arrays.fill(arr, ring.zero());
         return new SquareMatrix<>(n, ring, arr);
     }
@@ -54,7 +58,7 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     public static <T> SquareMatrix<T> identity(int n, Ring<T> ring) {
         if (n <= 0) throw new IllegalArgumentException("Dimension must be positive: " + n);
         Objects.requireNonNull(ring, "ring cannot be null");
-        Object[] arr = new Object[n * n];
+        Object[] arr = new Object[Math.multiplyExact(n, n)];
         Arrays.fill(arr, ring.zero());
         for (int i = 0; i < n; i++) {
             arr[i * n + i] = ring.one();
@@ -63,13 +67,14 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     }
 
     public static <T> SquareMatrix<T> of(Ring<T> ring, T[][] matrix2D) {
-        Objects.requireNonNull(matrix2D, "matrix2D cannot be null");
+        Objects.requireNonNull(ring, "ring cannot be null");
+        Object[] flat = MatrixOps.flatten2D(matrix2D);
         int n = matrix2D.length;
-        if (n == 0 || matrix2D[0].length != n) {
-            throw new IllegalArgumentException("Provided 2D array is not square (" + n + "x" + (n == 0 ? 0 : matrix2D[0].length) + ")");
+        int cols = matrix2D[0].length;
+        if (cols != n) {
+            throw new IllegalArgumentException("Provided 2D array is not square (" + n + "x" + cols + ")");
         }
-        DenseMatrix<T> dense = DenseMatrix.of(ring, matrix2D);
-        return new SquareMatrix<>(n, ring, dense.rawData());
+        return new SquareMatrix<>(n, ring, flat);
     }
 
     @Override
@@ -117,6 +122,18 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     }
 
     @Override
+    public SquareMatrix<T> add(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        return switch (other) {
+            case SquareMatrix<T> sm -> add(sm);
+            case DenseMatrix<T> dm -> {
+                checkSameRing(dm.ring());
+                throw new DimensionMismatchException(this.dimension, this.dimension, dm.rows(), dm.cols());
+            }
+        };
+    }
+
+    @Override
     public SquareMatrix<T> negate() {
         return new SquareMatrix<>(dimension, ring, MatrixOps.negate(ring, data));
     }
@@ -126,6 +143,18 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         checkSameDimension(other);
         checkSameRing(other.ring);
         return new SquareMatrix<>(dimension, ring, MatrixOps.subtract(ring, data, other.data));
+    }
+
+    @Override
+    public SquareMatrix<T> subtract(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        return switch (other) {
+            case SquareMatrix<T> sm -> subtract(sm);
+            case DenseMatrix<T> dm -> {
+                checkSameRing(dm.ring());
+                throw new DimensionMismatchException(this.dimension, this.dimension, dm.rows(), dm.cols());
+            }
+        };
     }
 
     @Override
@@ -167,6 +196,7 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
         return new Vector<>(this.dimension, MatrixOps.multiplyColumnVector(ring, data, vector.rawData(), this.dimension, this.dimension), ring);
     }
 
+    @Override
     public SquareMatrix<T> scale(T scalar) {
         Objects.requireNonNull(scalar, "scalar cannot be null");
         return new SquareMatrix<>(dimension, ring, MatrixOps.scale(ring, data, scalar));
@@ -215,7 +245,6 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     @Override
     @SuppressWarnings("unchecked")
     public Stream<List<T>> streamRows() {
-        if (dimension == 0) return Stream.empty();
         return Arrays.stream((T[]) data).gather(Gatherers.windowFixed(dimension));
     }
 
@@ -241,12 +270,13 @@ public record SquareMatrix<T>(int dimension, Ring<T> ring, Object[] data)
     public boolean equals(Object o) {
         return o instanceof SquareMatrix<?> other
             && dimension == other.dimension
+            && Objects.equals(ring, other.ring)
             && Arrays.equals(data, other.data);
     }
 
     @Override
     public int hashCode() {
-        return 31 * dimension + Arrays.hashCode(data);
+        return 31 * Objects.hash(dimension, ring) + Arrays.hashCode(data);
     }
 
     @Override

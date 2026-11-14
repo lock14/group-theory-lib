@@ -6,24 +6,39 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Gatherers;
 import java.util.stream.Stream;
+import lock14.algebra.element.ModuleElement;
 import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.structure.Ring;
 
 /**
- * An immutable rectangular Dense Matrix over a {@link Ring} R.
+ * An immutable strictly rectangular ({@code rows != cols}) Dense Matrix over a {@link Ring} R.
  * Backed by a contiguous 1D flat row-major array for optimal cache locality.
+ * For square matrices ({@code rows == cols}), use {@link SquareMatrix} or {@link Matrix#of}.
  *
  * @param <T> the entry type in Ring R
  */
-public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) implements Matrix<T> {
+public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data)
+    implements Matrix<T>, ModuleElement<DenseMatrix<T>, T> {
 
     public DenseMatrix {
-        if (rows < 0 || cols < 0) {
-            throw new IllegalArgumentException("Matrix dimensions must be non-negative: " + rows + "x" + cols);
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("Matrix dimensions must be positive: " + rows + "x" + cols);
+        }
+        if (rows == cols) {
+            throw new IllegalArgumentException(
+                "DenseMatrix requires rectangular dimensions (rows != cols), got " + rows + "x" + cols
+                + "; use SquareMatrix or Matrix.of(...) for square matrices"
+            );
         }
         Objects.requireNonNull(ring, "Ring cannot be null");
         Objects.requireNonNull(data, "Data cannot be null");
-        if (data.length != rows * cols) {
+        int expectedLength;
+        try {
+            expectedLength = Math.multiplyExact(rows, cols);
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException("Matrix dimensions overflow array capacity: " + rows + "x" + cols, ex);
+        }
+        if (data.length != expectedLength) {
             throw new DimensionMismatchException(
                 "Element array length (" + data.length + ") does not match matrix dimensions (" + rows + "x" + cols + ")"
             );
@@ -38,44 +53,29 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
     @SafeVarargs
     public static <T> DenseMatrix<T> of(int rows, int cols, Ring<T> ring, T... elements) {
         Objects.requireNonNull(elements, "Elements cannot be null");
-        if (elements.length != rows * cols) {
-            throw new DimensionMismatchException("Element array length (" + elements.length + ") does not match expected " + (rows * cols));
-        }
         return new DenseMatrix<>(rows, cols, ring, elements);
     }
 
     public static <T> DenseMatrix<T> zeros(int rows, int cols, Ring<T> ring) {
-        if (rows < 0 || cols < 0) throw new IllegalArgumentException("Dimensions must be non-negative");
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
+        }
+        if (rows == cols) {
+            throw new IllegalArgumentException(
+                "DenseMatrix requires rectangular dimensions (rows != cols); use SquareMatrix.zeros or Matrix.zeros"
+            );
+        }
         Objects.requireNonNull(ring, "ring cannot be null");
-        Object[] arr = new Object[rows * cols];
+        Object[] arr = new Object[Math.multiplyExact(rows, cols)];
         Arrays.fill(arr, ring.zero());
         return new DenseMatrix<>(rows, cols, ring, arr);
     }
 
-    public static <T> DenseMatrix<T> identity(int n, Ring<T> ring) {
-        if (n <= 0) throw new IllegalArgumentException("Identity dimension must be positive: " + n);
-        Objects.requireNonNull(ring, "ring cannot be null");
-        Object[] arr = new Object[n * n];
-        Arrays.fill(arr, ring.zero());
-        for (int i = 0; i < n; i++) {
-            arr[i * n + i] = ring.one();
-        }
-        return new DenseMatrix<>(n, n, ring, arr);
-    }
-
     public static <T> DenseMatrix<T> of(Ring<T> ring, T[][] matrix2D) {
-        Objects.requireNonNull(matrix2D, "matrix2D cannot be null");
+        Objects.requireNonNull(ring, "ring cannot be null");
+        Object[] flat = MatrixOps.flatten2D(matrix2D);
         int r = matrix2D.length;
-        int c = r == 0 ? 0 : matrix2D[0].length;
-        Object[] flat = new Object[r * c];
-        for (int i = 0; i < r; i++) {
-            if (matrix2D[i].length != c) {
-                throw new IllegalArgumentException("Ragged 2D array: row " + i + " has length " + matrix2D[i].length + " expected " + c);
-            }
-            for (int j = 0; j < c; j++) {
-                flat[i * c + j] = Objects.requireNonNull(matrix2D[i][j], "Element cannot be null at (" + i + ", " + j + ")");
-            }
-        }
+        int c = matrix2D[0].length;
         return new DenseMatrix<>(r, c, ring, flat);
     }
 
@@ -106,23 +106,54 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         return new DenseMatrix<>(rows, cols, ring, copy);
     }
 
+    @Override
     public DenseMatrix<T> add(DenseMatrix<T> other) {
         checkSameShape(other);
         checkSameRing(other.ring);
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.add(ring, data, other.data));
     }
 
+    @Override
+    public DenseMatrix<T> add(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        return switch (other) {
+            case DenseMatrix<T> dm -> add(dm);
+            case SquareMatrix<T> sm -> {
+                checkSameRing(sm.ring());
+                throw new DimensionMismatchException(this.rows, this.cols, sm.dimension(), sm.dimension());
+            }
+        };
+    }
+
+    @Override
     public DenseMatrix<T> negate() {
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.negate(ring, data));
     }
 
+    @Override
     public DenseMatrix<T> subtract(DenseMatrix<T> other) {
         checkSameShape(other);
         checkSameRing(other.ring);
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.subtract(ring, data, other.data));
     }
 
-    public DenseMatrix<T> multiply(DenseMatrix<T> other) {
+    @Override
+    public DenseMatrix<T> subtract(Matrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        return switch (other) {
+            case DenseMatrix<T> dm -> subtract(dm);
+            case SquareMatrix<T> sm -> {
+                checkSameRing(sm.ring());
+                throw new DimensionMismatchException(this.rows, this.cols, sm.dimension(), sm.dimension());
+            }
+        };
+    }
+
+    /**
+     * Multiplies this rectangular {@code (rows x cols)} matrix with another rectangular matrix.
+     * Returns a {@link SquareMatrix} when {@code this.rows == other.cols}, or a {@link DenseMatrix} otherwise.
+     */
+    public Matrix<T> multiply(DenseMatrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
         checkSameRing(other.ring);
         if (this.cols != other.rows) {
@@ -130,23 +161,35 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
                 "Cannot multiply matrix " + rows + "x" + cols + " with " + other.rows + "x" + other.cols
             );
         }
-        return new DenseMatrix<>(this.rows, other.cols, ring, MatrixOps.multiply(ring, data, other.data, this.rows, this.cols, other.cols));
+        Object[] res = MatrixOps.multiply(ring, data, other.data, this.rows, this.cols, other.cols);
+        return this.rows == other.cols
+            ? new SquareMatrix<>(this.rows, ring, res)
+            : new DenseMatrix<>(this.rows, other.cols, ring, res);
+    }
+
+    /**
+     * Multiplies this rectangular {@code (rows x n)} matrix with an {@code (n x n)} {@link SquareMatrix},
+     * yielding a rectangular {@code (rows x n)} {@link DenseMatrix} ({@code rows != n}).
+     */
+    public DenseMatrix<T> multiply(SquareMatrix<T> other) {
+        Objects.requireNonNull(other, "other matrix cannot be null");
+        checkSameRing(other.ring());
+        if (this.cols != other.dimension()) {
+            throw new DimensionMismatchException(
+                "Cannot multiply matrix " + rows + "x" + cols + " with " + other.dimension() + "x" + other.dimension()
+            );
+        }
+        Object[] res = MatrixOps.multiply(ring, data, other.rawData(), this.rows, this.cols, other.dimension());
+        return new DenseMatrix<>(this.rows, other.dimension(), ring, res);
     }
 
     @Override
-    public DenseMatrix<T> multiply(Matrix<T> other) {
+    public Matrix<T> multiply(Matrix<T> other) {
         Objects.requireNonNull(other, "other matrix cannot be null");
-        checkSameRing(other.ring());
-        if (this.cols != other.rows()) {
-            throw new DimensionMismatchException(
-                "Cannot multiply matrix " + rows + "x" + cols + " with " + other.rows() + "x" + other.cols()
-            );
-        }
-        Object[] otherData = switch (other) {
-            case DenseMatrix<T> dm -> dm.data;
-            case SquareMatrix<T> sm -> sm.rawData();
+        return switch (other) {
+            case DenseMatrix<T> dm -> multiply(dm);
+            case SquareMatrix<T> sm -> multiply(sm);
         };
-        return new DenseMatrix<>(this.rows, other.cols(), ring, MatrixOps.multiply(ring, data, otherData, this.rows, this.cols, other.cols()));
     }
 
     @Override
@@ -158,12 +201,10 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
                 "Cannot multiply matrix " + rows + "x" + cols + " with vector of dimension " + vector.dimension()
             );
         }
-        if (this.rows <= 0) {
-            throw new IllegalArgumentException("Resulting vector dimension must be positive, but matrix has 0 rows");
-        }
         return new Vector<>(this.rows, MatrixOps.multiplyColumnVector(ring, data, vector.rawData(), this.rows, this.cols), ring);
     }
 
+    @Override
     public DenseMatrix<T> scale(T scalar) {
         Objects.requireNonNull(scalar, "scalar cannot be null");
         return new DenseMatrix<>(rows, cols, ring, MatrixOps.scale(ring, data, scalar));
@@ -197,16 +238,12 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
     @Override
     @SuppressWarnings("unchecked")
     public Stream<List<T>> streamRows() {
-        if (cols == 0) return Stream.empty();
         return Arrays.stream((T[]) data).gather(Gatherers.windowFixed(cols));
     }
 
     @Override
     public SquareMatrix<T> asSquareMatrix() {
-        if (!isSquare()) {
-            throw new IllegalArgumentException("Cannot convert rectangular matrix (" + rows + "x" + cols + ") to SquareMatrix");
-        }
-        return new SquareMatrix<>(rows, ring, data);
+        throw new IllegalArgumentException("Cannot convert rectangular matrix (" + rows + "x" + cols + ") to SquareMatrix");
     }
 
     private void checkSameShape(DenseMatrix<T> other) {
@@ -227,12 +264,13 @@ public record DenseMatrix<T>(int rows, int cols, Ring<T> ring, Object[] data) im
         return o instanceof DenseMatrix<?> other
             && rows == other.rows
             && cols == other.cols
+            && Objects.equals(ring, other.ring)
             && Arrays.equals(data, other.data);
     }
 
     @Override
     public int hashCode() {
-        return 31 * Objects.hash(rows, cols) + Arrays.hashCode(data);
+        return 31 * Objects.hash(rows, cols, ring) + Arrays.hashCode(data);
     }
 
     @Override

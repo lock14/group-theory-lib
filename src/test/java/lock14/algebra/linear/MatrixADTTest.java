@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.numbers.Rational;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,20 +14,62 @@ import org.junit.jupiter.api.Test;
 class MatrixADTTest {
 
     @Test
-    @DisplayName("Exhaustive Pattern Matching on Matrix ADT")
+    @DisplayName("Exhaustive Pattern Matching on Disjoint Matrix ADT")
     void testExhaustivePatternMatching() {
-        Matrix<Rational> square = SquareMatrix.identity(3, Rational.field());
-        Matrix<Rational> dense = DenseMatrix.zeros(2, 4, Rational.field());
+        Matrix<Rational> square = Matrix.zeros(3, 3, Rational.field());
+        Matrix<Rational> dense = Matrix.zeros(2, 4, Rational.field());
 
+        assertThat(square).isInstanceOf(SquareMatrix.class);
+        assertThat(dense).isInstanceOf(DenseMatrix.class);
         assertThat(classifyMatrix(square)).isEqualTo("Square 3x3");
-        assertThat(classifyMatrix(dense)).isEqualTo("Dense 2x4");
+        assertThat(classifyMatrix(dense)).isEqualTo("Rectangular 2x4");
     }
 
     private String classifyMatrix(Matrix<?> matrix) {
         return switch (matrix) {
             case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension();
-            case DenseMatrix<?> dm -> "Dense " + dm.rows() + "x" + dm.cols();
+            case DenseMatrix<?> dm -> "Rectangular " + dm.rows() + "x" + dm.cols();
         };
+    }
+
+    @Test
+    @DisplayName("Canonical Matrix.of and Matrix.identity factories")
+    void testCanonicalMatrixFactories() {
+        Matrix<Rational> mSq = Matrix.of(2, 2, Rational.field(),
+                Rational.ONE, Rational.TWO,
+                Rational.ZERO, Rational.TEN);
+        Matrix<Rational> mRect = Matrix.of(1, 3, Rational.field(),
+                Rational.ONE, Rational.TWO, Rational.TEN);
+
+        assertThat(mSq).isInstanceOf(SquareMatrix.class);
+        assertThat(mRect).isInstanceOf(DenseMatrix.class);
+        assertThat(Matrix.identity(2, Rational.field())).isEqualTo(SquareMatrix.identity(2, Rational.field()));
+    }
+
+    @Test
+    @DisplayName("Polymorphic add, subtract, negate, and scale on Matrix<T>")
+    void testPolymorphicModuleOperationsOnMatrix() {
+        Matrix<Rational> a = Matrix.of(2, 3, Rational.field(),
+                Rational.of(1), Rational.of(2), Rational.of(3),
+                Rational.of(4), Rational.of(5), Rational.of(6));
+        Matrix<Rational> b = Matrix.of(2, 3, Rational.field(),
+                Rational.of(6), Rational.of(5), Rational.of(4),
+                Rational.of(3), Rational.of(2), Rational.of(1));
+
+        assertThat(a.add(b)).isEqualTo(Matrix.of(2, 3, Rational.field(),
+                Rational.of(7), Rational.of(7), Rational.of(7),
+                Rational.of(7), Rational.of(7), Rational.of(7)));
+        assertThat(a.subtract(b)).isEqualTo(a.add(b.negate()));
+        assertThat(a.scale(Rational.of(2))).isEqualTo(a.add(a));
+
+        Matrix<Rational> sq = Matrix.identity(2, Rational.field());
+        assertThat(sq.add(sq).scale(Rational.of(3))).isEqualTo(
+                SquareMatrix.identity(2, Rational.field()).scale(Rational.of(6))
+        );
+        assertThatThrownBy(() -> a.add(sq))
+                .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> sq.subtract(a))
+                .isInstanceOf(DimensionMismatchException.class);
     }
 
     @Test
@@ -89,6 +132,11 @@ class MatrixADTTest {
                 Rational.of(4), Rational.of(17),
                 Rational.of(6), Rational.of(21)));
 
+        // DenseMatrix (2x3) * DenseMatrix (3x2) -> SquareMatrix (2x2)
+        Matrix<Rational> gram = rect.multiply(rectT);
+        assertThat(gram).isInstanceOf(SquareMatrix.class);
+        assertThat(gram.asSquareMatrix().dimension()).isEqualTo(2);
+
         // SquareMatrix * Vector
         Vector<Rational> v = Vector.of(Rational.field(), Rational.of(5), Rational.of(2));
         assertThat(mSq.multiply(v)).isEqualTo(Vector.of(Rational.field(), Rational.of(12), Rational.of(6)));
@@ -129,8 +177,8 @@ class MatrixADTTest {
     @Test
     @DisplayName("asSquareMatrix conversion")
     void testAsSquareMatrix() {
-        DenseMatrix<Rational> squareDense = DenseMatrix.identity(3, Rational.field());
-        SquareMatrix<Rational> sm = squareDense.asSquareMatrix();
+        Matrix<Rational> polySquare = Matrix.identity(3, Rational.field());
+        SquareMatrix<Rational> sm = polySquare.asSquareMatrix();
         assertThat(sm.dimension()).isEqualTo(3);
         assertThat(sm.determinant()).isEqualTo(Rational.ONE);
 
@@ -142,7 +190,7 @@ class MatrixADTTest {
     @Test
     @DisplayName("Row streaming on Matrix interface")
     void testRowStreaming() {
-        Matrix<Rational> matrix = DenseMatrix.identity(3, Rational.field());
+        Matrix<Rational> matrix = Matrix.identity(3, Rational.field());
         List<List<Rational>> rows = matrix.streamRows().toList();
         assertThat(rows).hasSize(3);
         assertThat(rows.get(0)).containsExactly(Rational.ONE, Rational.ZERO, Rational.ZERO);

@@ -1,5 +1,6 @@
 package lock14.algebra.linear;
 
+import java.util.Objects;
 import lock14.algebra.exceptions.NonInvertibleElementException;
 import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.numbers.Complex;
@@ -14,6 +15,26 @@ import lock14.algebra.structure.Ring;
 final class MatrixOps {
 
     private MatrixOps() {}
+
+    static <T> Object[] flatten2D(T[][] matrix2D) {
+        Objects.requireNonNull(matrix2D, "matrix2D cannot be null");
+        int r = matrix2D.length;
+        if (r == 0 || matrix2D[0] == null || matrix2D[0].length == 0) {
+            throw new IllegalArgumentException("Provided 2D array dimensions must be positive");
+        }
+        int c = matrix2D[0].length;
+        Object[] flat = new Object[Math.multiplyExact(r, c)];
+        for (int i = 0; i < r; i++) {
+            T[] row = Objects.requireNonNull(matrix2D[i], "Matrix row cannot be null at index " + i);
+            if (row.length != c) {
+                throw new IllegalArgumentException("Ragged 2D array: row " + i + " has length " + row.length + " expected " + c);
+            }
+            for (int j = 0; j < c; j++) {
+                flat[i * c + j] = Objects.requireNonNull(row[j], "Element cannot be null at (" + i + ", " + j + ")");
+            }
+        }
+        return flat;
+    }
 
     @SuppressWarnings("unchecked")
     static <T> Object[] add(Ring<T> ring, Object[] a, Object[] b) {
