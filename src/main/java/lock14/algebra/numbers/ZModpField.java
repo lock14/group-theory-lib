@@ -43,41 +43,62 @@ public record ZModpField(BigInteger prime) implements Field<ModuloInteger> {
 
     @Override
     public ModuloInteger add(ModuloInteger a, ModuloInteger b) {
+        checkInField(a);
+        checkInField(b);
         return a.add(b);
     }
 
     @Override
     public ModuloInteger negate(ModuloInteger a) {
+        checkInField(a);
         return a.negate();
     }
 
     @Override
     public ModuloInteger subtract(ModuloInteger a, ModuloInteger b) {
+        checkInField(a);
+        checkInField(b);
         return a.subtract(b);
     }
 
     @Override
     public ModuloInteger multiply(ModuloInteger a, ModuloInteger b) {
+        checkInField(a);
+        checkInField(b);
         return a.multiply(b);
     }
 
     @Override
     public ModuloInteger reciprocal(ModuloInteger a) {
+        checkInField(a);
         return a.reciprocal();
     }
 
     @Override
     public ModuloInteger divide(ModuloInteger a, ModuloInteger b) {
+        checkInField(a);
+        checkInField(b);
         return a.divide(b);
     }
 
     @Override
     public boolean isZero(ModuloInteger element) {
+        checkInField(element);
         return element.isZero();
     }
 
     @Override
     public boolean isOne(ModuloInteger element) {
+        checkInField(element);
         return element.isOne();
+    }
+
+    private void checkInField(ModuloInteger m) {
+        Objects.requireNonNull(m, "element cannot be null");
+        if (!m.modulus().equals(this.prime)) {
+            throw new IllegalArgumentException(
+                "Element modulus " + m.modulus() + " does not match field modulus " + this.prime
+            );
+        }
     }
 }

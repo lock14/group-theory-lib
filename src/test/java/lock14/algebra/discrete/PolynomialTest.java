@@ -80,4 +80,24 @@ public class PolynomialTest extends CommutativeRingLaws<Polynomial<Rational>> {
                 () -> Polynomial.of(RationalField.INSTANCE, coeffsWithNull)
         ).isInstanceOf(NullPointerException.class);
     }
+
+    @Test
+    public void testForeignCoefficientRingOperandsRejected() {
+        lock14.algebra.numbers.ZModnRing z5 = new lock14.algebra.numbers.ZModnRing(5);
+        lock14.algebra.numbers.ZModnRing z7 = new lock14.algebra.numbers.ZModnRing(7);
+        PolynomialRing<lock14.algebra.numbers.ModuloInteger> z5x = new PolynomialRing<>(z5);
+        GeneralPolynomialRing<lock14.algebra.numbers.ModuloInteger> genZ5x = new GeneralPolynomialRing<>(z5);
+
+        Polynomial<lock14.algebra.numbers.ModuloInteger> p7a = Polynomial.of(z7, z7.element(1), z7.element(2));
+        Polynomial<lock14.algebra.numbers.ModuloInteger> p7b = Polynomial.of(z7, z7.element(3));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> z5x.add(p7a, p7b))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> z5x.isZero(p7a))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> genZ5x.multiply(p7a, p7b))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> genZ5x.isOne(p7a))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }
