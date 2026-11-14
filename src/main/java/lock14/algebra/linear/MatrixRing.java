@@ -34,6 +34,7 @@ public record MatrixRing<T>(int dimension, Ring<T> entryRing) implements Ring<Sq
      * @return an {@code n x n} {@link SquareMatrix} in {@code M_n(R)}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final SquareMatrix<T> of(T... elements) {
         return SquareMatrix.of(dimension, entryRing, elements);
     }

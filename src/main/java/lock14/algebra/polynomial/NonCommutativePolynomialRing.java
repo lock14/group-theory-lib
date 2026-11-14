@@ -29,6 +29,7 @@ public record NonCommutativePolynomialRing<T>(Ring<T> coefficientRing) implement
      * @return the canonical polynomial over {@link #coefficientRing()}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientRing, coeffs);
     }

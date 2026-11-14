@@ -70,6 +70,7 @@ public final class SquareMatrix<T>
      * @return an immutable {@code n x n} {@link SquareMatrix}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> SquareMatrix<T> of(int n, Ring<T> ring, T... elements) {
         return validated(n, ring, elements, true);
     }

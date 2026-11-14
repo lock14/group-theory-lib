@@ -74,6 +74,7 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
      * @return an immutable {@code rows x cols} {@link RectangularMatrix}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static <T> RectangularMatrix<T> of(int rows, int cols, Ring<T> ring, T... elements) {
         return validated(rows, cols, ring, elements, true);
     }

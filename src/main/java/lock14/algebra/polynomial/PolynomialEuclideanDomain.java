@@ -34,6 +34,7 @@ public record PolynomialEuclideanDomain<T>(Field<T> coefficientField) implements
      * @return the canonical polynomial over {@link #coefficientField()}
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final Polynomial<T> of(T... coeffs) {
         return Polynomial.of(coefficientField, coeffs);
     }

@@ -18,6 +18,26 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  hygiene-and-lint:
+    name: Hygiene, Checkstyle & Javadoc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
+
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Run Enforcer, Checkstyle, Strict Compiler & Javadoc
+        run: ./mvnw --batch-mode --no-transfer-progress clean validate test-compile javadoc:javadoc
+
   build-and-test:
     name: Test (Java ${{ matrix.java-version }} on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -42,19 +62,26 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x ./mvnw
 
-      - name: Run Maven Test Suite & Verify Javadoc
-        run: ./mvnw --batch-mode --no-transfer-progress clean test javadoc:javadoc
+      - name: Run Maven Test Suite
+        run: ./mvnw --batch-mode --no-transfer-progress clean test
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./target/site/jacoco/jacoco.xml
+          fail_ci_if_error: false
 
   # =========================================================================
   # Gatekeeper Pattern:
-  # Aggregates all matrix jobs into a single required status check for branch
-  # protection rules. Adding or removing OS/JDK matrix combinations will not
-  # break branch protection settings.
+  # Aggregates all hygiene/lint and OS matrix jobs into a single required
+  # status check for branch protection rules.
   # =========================================================================
   gatekeeper:
     name: CI Gatekeeper
     if: always()
     needs:
+      - hygiene-and-lint
       - build-and-test
     runs-on: ubuntu-latest
     permissions:
@@ -63,12 +90,14 @@ jobs:
     steps:
       - name: Evaluate CI matrix status
         run: |
-          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
-            echo "::error::One or more prerequisite CI matrix jobs failed or were cancelled."
+          echo "Hygiene & Lint: ${{ needs.hygiene-and-lint.result }}"
+          echo "Test Matrix:    ${{ needs.build-and-test.result }}"
+          if [ "${{ needs.hygiene-and-lint.result }}" != "success" ] || \
+             [ "${{ needs.build-and-test.result }}" != "success" ]; then
+            echo "::error::One or more prerequisite CI jobs failed or were cancelled."
             exit 1
           fi
-          echo "All CI matrix checks passed successfully!"
-          exit 0
+          echo "All CI checks passed successfully!"
 
       # Runs seamlessly inside Gatekeeper ONLY for Dependabot PRs (no extra checks in UI for humans)
       - name: Auto-Merge Dependabot PR
