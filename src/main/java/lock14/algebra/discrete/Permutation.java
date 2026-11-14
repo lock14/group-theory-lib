@@ -53,6 +53,11 @@ public record Permutation(int[] mapping) implements GroupElement<Permutation> {
         return new Permutation(map);
     }
 
+    @Override
+    public int[] mapping() {
+        return mapping.clone();
+    }
+
     public int degree() {
         return mapping.length;
     }

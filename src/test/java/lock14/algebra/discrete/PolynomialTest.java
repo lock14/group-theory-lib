@@ -72,4 +72,12 @@ public class PolynomialTest extends CommutativeRingLaws<Polynomial<Rational>> {
                 Rational.of(4), Rational.of(6), Rational.of(6));
         assertThat(deriv).isEqualTo(expected);
     }
+
+    @Test
+    public void testNullInteriorCoefficientRejectedAtConstruction() {
+        java.util.List<Rational> coeffsWithNull = java.util.Arrays.asList(null, Rational.ONE);
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> Polynomial.of(RationalField.INSTANCE, coeffsWithNull)
+        ).isInstanceOf(NullPointerException.class);
+    }
 }

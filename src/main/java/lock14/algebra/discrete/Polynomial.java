@@ -17,8 +17,14 @@ public record Polynomial<T>(List<T> coefficients, Ring<T> ring) implements RingE
         Objects.requireNonNull(coefficients, "coefficients cannot be null");
         Objects.requireNonNull(ring, "ring cannot be null");
 
-        // Trim trailing zeros to maintain canonical polynomial form
-        List<T> trimmed = new ArrayList<>(coefficients);
+        // Validate non-null coefficients and trim trailing zeros to maintain canonical polynomial form
+        List<T> trimmed = new ArrayList<>(coefficients.size());
+        for (int i = 0; i < coefficients.size(); i++) {
+            trimmed.add(Objects.requireNonNull(
+                coefficients.get(i),
+                "Polynomial coefficient cannot be null at index " + i
+            ));
+        }
         while (trimmed.size() > 1 && ring.isZero(trimmed.getLast())) {
             trimmed.removeLast();
         }

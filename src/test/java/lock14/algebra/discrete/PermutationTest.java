@@ -69,6 +69,22 @@ public class PermutationTest extends GroupLaws<Permutation> {
     }
 
     @Test
+    public void testMappingAccessorAndConstructorCloningPreventMutation() {
+        int[] raw = {1, 2, 0};
+        Permutation p = new Permutation(raw);
+        int originalHash = p.hashCode();
+
+        raw[0] = 99;
+        assertThat(p.apply(0)).isEqualTo(1);
+
+        int[] leaked = p.mapping();
+        leaked[0] = 99;
+        assertThat(p.apply(0)).isEqualTo(1);
+        assertThat(p.hashCode()).isEqualTo(originalHash);
+        assertThat(p).isEqualTo(Permutation.of(1, 2, 0));
+    }
+
+    @Test
     public void testInvalidPermutationThrows() {
         // Duplicate element
         assertThatThrownBy(() -> Permutation.of(0, 1, 1, 3))
