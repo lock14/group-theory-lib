@@ -1,68 +1,97 @@
 package lock14.algebra.numbers;
 
-import lock14.algebra.structure.DivisionRing;
+import java.util.Objects;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
+import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.Ring;
 
 /**
- * The Non-Commutative Division Ring (Skew-Field) of Hamilton Quaternions (H, +, *).
+ * The Non-Commutative Quaternion Algebra {@code H(R)} over any {@link CommutativeRing} {@code R}.
+ *
+ * @param <T> scalar ring element type
  */
-public final class QuaternionRing implements DivisionRing<Quaternion> {
+public record QuaternionRing<T>(CommutativeRing<T> scalarRing) implements Ring<Quaternion<T>> {
 
-    public static final QuaternionRing INSTANCE = new QuaternionRing();
+    public QuaternionRing {
+        Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
+    }
 
-    private QuaternionRing() {}
+    public Quaternion<T> of(T w, T x, T y, T z) {
+        return Quaternion.of(scalarRing, w, x, y, z);
+    }
 
-    @Override
-    public Quaternion zero() {
-        return Quaternion.ZERO;
+    public Quaternion<T> i() {
+        return Quaternion.of(scalarRing, scalarRing.zero(), scalarRing.one(), scalarRing.zero(), scalarRing.zero());
+    }
+
+    public Quaternion<T> j() {
+        return Quaternion.of(scalarRing, scalarRing.zero(), scalarRing.zero(), scalarRing.one(), scalarRing.zero());
+    }
+
+    public Quaternion<T> k() {
+        return Quaternion.of(scalarRing, scalarRing.zero(), scalarRing.zero(), scalarRing.zero(), scalarRing.one());
     }
 
     @Override
-    public Quaternion one() {
-        return Quaternion.ONE;
+    public Quaternion<T> zero() {
+        T z = scalarRing.zero();
+        return new Quaternion<>(z, z, z, z, scalarRing);
     }
 
     @Override
-    public Quaternion add(Quaternion a, Quaternion b) {
+    public Quaternion<T> one() {
+        T z = scalarRing.zero();
+        return new Quaternion<>(scalarRing.one(), z, z, z, scalarRing);
+    }
+
+    @Override
+    public Quaternion<T> add(Quaternion<T> a, Quaternion<T> b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.add(b);
     }
 
     @Override
-    public Quaternion negate(Quaternion a) {
+    public Quaternion<T> negate(Quaternion<T> a) {
+        checkInRing(a);
         return a.negate();
     }
 
     @Override
-    public Quaternion subtract(Quaternion a, Quaternion b) {
+    public Quaternion<T> subtract(Quaternion<T> a, Quaternion<T> b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.subtract(b);
     }
 
     @Override
-    public Quaternion multiply(Quaternion a, Quaternion b) {
+    public Quaternion<T> multiply(Quaternion<T> a, Quaternion<T> b) {
+        checkInRing(a);
+        checkInRing(b);
         return a.multiply(b);
     }
 
     @Override
-    public Quaternion reciprocal(Quaternion a) {
-        return a.reciprocal();
-    }
-
-    @Override
-    public Quaternion divide(Quaternion a, Quaternion b) {
-        return a.divide(b);
-    }
-
-    @Override
-    public Quaternion divideLeft(Quaternion a, Quaternion b) {
-        return b.reciprocal().multiply(a);
-    }
-
-    @Override
-    public boolean isZero(Quaternion element) {
+    public boolean isZero(Quaternion<T> element) {
+        checkInRing(element);
         return element.isZero();
     }
 
     @Override
-    public boolean isOne(Quaternion element) {
+    public boolean isOne(Quaternion<T> element) {
+        checkInRing(element);
         return element.isOne();
+    }
+
+    public boolean isUnit(Quaternion<T> element) {
+        checkInRing(element);
+        return element.tryReciprocal().isPresent();
+    }
+
+    private void checkInRing(Quaternion<T> q) {
+        Objects.requireNonNull(q, "quaternion cannot be null");
+        if (!Objects.equals(q.scalarRing(), this.scalarRing)) {
+            throw new IncompatibleAlgebraException("Quaternion scalar ring mismatch");
+        }
     }
 }

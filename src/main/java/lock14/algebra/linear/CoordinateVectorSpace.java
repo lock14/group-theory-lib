@@ -7,9 +7,9 @@ import lock14.algebra.structure.Field;
 import lock14.algebra.structure.VectorSpace;
 
 /**
- * The Coordinate Vector Space F^n of dimension {@code n} over a scalar {@link Field} F.
+ * The Coordinate Vector Space {@code F^n} of dimension {@code n} over a scalar {@link Field} {@code F}.
  *
- * @param <T> the scalar field element type
+ * @param <T> scalar field element type
  */
 public record CoordinateVectorSpace<T>(int dimension, Field<T> scalarField) implements VectorSpace<Vector<T>, T> {
 
@@ -20,9 +20,6 @@ public record CoordinateVectorSpace<T>(int dimension, Field<T> scalarField) impl
         Objects.requireNonNull(scalarField, "scalarField cannot be null");
     }
 
-    /**
-     * Views this coordinate vector space as its underlying free {@link CoordinateModule}.
-     */
     public CoordinateModule<T> asModule() {
         return new CoordinateModule<>(dimension, scalarField);
     }

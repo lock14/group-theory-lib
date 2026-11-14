@@ -1,202 +1,178 @@
 package lock14.algebra.numbers;
 
 import java.util.Objects;
-import lock14.algebra.context.AlgebraicContext;
+import java.util.Optional;
 import lock14.algebra.element.RingElement;
-import lock14.algebra.structure.DivisionRing;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
+import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.exceptions.UndefinedOperationException;
+import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.Field;
+import lock14.algebra.structure.IntegralDomain;
 
 /**
- * An immutable Hamilton Quaternion (w + xi + yj + zk) over {@code double}.
- * Quaternions form a non-commutative division ring (skew-field) H.
+ * Exact Hamilton Quaternion {@code w + x*i + y*j + z*k} parameterized over any {@link CommutativeRing} {@code T}
+ * (for example, {@link Rationals#FIELD} for the exact rational division ring {@code H(Q)} or {@link Integers#RING}
+ * for Lipschitz integer quaternions).
+ *
+ * @param <T> scalar ring element type
  */
-public record Quaternion(double w, double x, double y, double z) implements RingElement<Quaternion> {
+public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
+    implements RingElement<Quaternion<T>> {
 
     public Quaternion {
-        w = (w == 0.0) ? 0.0 : w;
-        x = (x == 0.0) ? 0.0 : x;
-        y = (y == 0.0) ? 0.0 : y;
-        z = (z == 0.0) ? 0.0 : z;
+        Objects.requireNonNull(w, "w cannot be null");
+        Objects.requireNonNull(x, "x cannot be null");
+        Objects.requireNonNull(y, "y cannot be null");
+        Objects.requireNonNull(z, "z cannot be null");
+        Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
     }
 
-    public static final Quaternion ZERO = new Quaternion(0.0, 0.0, 0.0, 0.0);
-    public static final Quaternion ONE = new Quaternion(1.0, 0.0, 0.0, 0.0);
-    public static final Quaternion I = new Quaternion(0.0, 1.0, 0.0, 0.0);
-    public static final Quaternion J = new Quaternion(0.0, 0.0, 1.0, 0.0);
-    public static final Quaternion K = new Quaternion(0.0, 0.0, 0.0, 1.0);
-
-    public static Quaternion of(double w, double x, double y, double z) {
-        return new Quaternion(w, x, y, z);
+    public static <T> Quaternion<T> of(CommutativeRing<T> ring, T w, T x, T y, T z) {
+        return new Quaternion<>(w, x, y, z, ring);
     }
 
-    public static Quaternion scalar(double w) {
-        return new Quaternion(w, 0.0, 0.0, 0.0);
+    public static <T> Quaternion<T> scalar(CommutativeRing<T> ring, T w) {
+        T zero = ring.zero();
+        return new Quaternion<>(w, zero, zero, zero, ring);
     }
 
-    public static Quaternion vector(double x, double y, double z) {
-        return new Quaternion(0.0, x, y, z);
-    }
-
-    public static DivisionRing<Quaternion> ring() {
-        return QuaternionRing.INSTANCE;
-    }
-
-    public boolean approxEquals(Quaternion other) {
-        Objects.requireNonNull(other, "other quaternion cannot be null");
-        if (this.equals(other)) {
-            return true;
-        }
-        return this.subtract(other).abs() <= AlgebraicContext.currentEpsilon();
+    public static Quaternion<Rational> ofRational(long w, long x, long y, long z) {
+        return new Quaternion<>(Rational.of(w), Rational.of(x), Rational.of(y), Rational.of(z), Rationals.FIELD);
     }
 
     public boolean isZero() {
-        return w == 0.0 && x == 0.0 && y == 0.0 && z == 0.0;
+        return scalarRing.isZero(w) && scalarRing.isZero(x) && scalarRing.isZero(y) && scalarRing.isZero(z);
     }
 
     public boolean isOne() {
-        return w == 1.0 && x == 0.0 && y == 0.0 && z == 0.0;
+        return scalarRing.isOne(w) && scalarRing.isZero(x) && scalarRing.isZero(y) && scalarRing.isZero(z);
     }
 
-    public double normSq() {
-        return w * w + x * x + y * y + z * z;
-    }
-
-    public double abs() {
-        if (Double.isInfinite(w) || Double.isInfinite(x) || Double.isInfinite(y) || Double.isInfinite(z)) {
-            return Double.POSITIVE_INFINITY;
-        }
-        double max = maxAbsComponent();
-        if (Double.isNaN(max) || max == 0.0) {
-            return max;
-        }
-        double nw = w / max;
-        double nx = x / max;
-        double ny = y / max;
-        double nz = z / max;
-        return max * Math.sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
-    }
-
-    private double maxAbsComponent() {
-        return Math.max(Math.max(Math.abs(w), Math.abs(x)), Math.max(Math.abs(y), Math.abs(z)));
-    }
-
-    public Quaternion conjugate() {
-        return new Quaternion(
+    public Quaternion<T> conjugate() {
+        return new Quaternion<>(
             w,
-            x == 0.0 ? 0.0 : -x,
-            y == 0.0 ? 0.0 : -y,
-            z == 0.0 ? 0.0 : -z
+            scalarRing.negate(x),
+            scalarRing.negate(y),
+            scalarRing.negate(z),
+            scalarRing
         );
     }
 
-    public Quaternion scale(double s) {
-        return new Quaternion(w * s, x * s, y * s, z * s);
+    public T normSq() {
+        T ww = scalarRing.multiply(w, w);
+        T xx = scalarRing.multiply(x, x);
+        T yy = scalarRing.multiply(y, y);
+        T zz = scalarRing.multiply(z, z);
+        return scalarRing.add(scalarRing.add(ww, xx), scalarRing.add(yy, zz));
     }
 
-    public double dot(Quaternion o) {
-        return w * o.w + x * o.x + y * o.y + z * o.z;
-    }
-
-    @Override
-    public Quaternion add(Quaternion o) {
-        Objects.requireNonNull(o, "other quaternion cannot be null");
-        return new Quaternion(this.w + o.w, this.x + o.x, this.y + o.y, this.z + o.z);
-    }
-
-    @Override
-    public Quaternion negate() {
-        return new Quaternion(
-            w == 0.0 ? 0.0 : -w,
-            x == 0.0 ? 0.0 : -x,
-            y == 0.0 ? 0.0 : -y,
-            z == 0.0 ? 0.0 : -z
+    public Quaternion<T> scale(T scalar) {
+        Objects.requireNonNull(scalar, "scalar cannot be null");
+        return new Quaternion<>(
+            scalarRing.multiply(scalar, w),
+            scalarRing.multiply(scalar, x),
+            scalarRing.multiply(scalar, y),
+            scalarRing.multiply(scalar, z),
+            scalarRing
         );
     }
 
     @Override
-    public Quaternion subtract(Quaternion o) {
-        Objects.requireNonNull(o, "other quaternion cannot be null");
-        return new Quaternion(this.w - o.w, this.x - o.x, this.y - o.y, this.z - o.z);
-    }
-
-    @Override
-    public Quaternion multiply(Quaternion o) {
-        Objects.requireNonNull(o, "other quaternion cannot be null");
-        double newW = this.w * o.w - this.x * o.x - this.y * o.y - this.z * o.z;
-        double newX = this.w * o.x + this.x * o.w + this.y * o.z - this.z * o.y;
-        double newY = this.w * o.y - this.x * o.z + this.y * o.w + this.z * o.x;
-        double newZ = this.w * o.z + this.x * o.y - this.y * o.x + this.z * o.w;
-        return new Quaternion(newW, newX, newY, newZ);
-    }
-
-    public Quaternion reciprocal() {
-        if (isZero()) {
-            throw new ArithmeticException("Cannot compute reciprocal of zero quaternion");
-        }
-        double max = maxAbsComponent();
-        if (Double.isNaN(max)) {
-            return new Quaternion(Double.NaN, Double.NaN, Double.NaN, Double.NaN);
-        }
-        if (Double.isInfinite(max)) {
-            return ZERO;
-        }
-        double nw = w / max;
-        double nx = x / max;
-        double ny = y / max;
-        double nz = z / max;
-        double scaledNormSq = nw * nw + nx * nx + ny * ny + nz * nz;
-        return new Quaternion(
-            (nw / scaledNormSq) / max,
-            (-nx / scaledNormSq) / max,
-            (-ny / scaledNormSq) / max,
-            (-nz / scaledNormSq) / max
+    public Quaternion<T> add(Quaternion<T> o) {
+        checkSameRing(o);
+        return new Quaternion<>(
+            scalarRing.add(w, o.w),
+            scalarRing.add(x, o.x),
+            scalarRing.add(y, o.y),
+            scalarRing.add(z, o.z),
+            scalarRing
         );
     }
 
-    public Quaternion divide(Quaternion o) {
-        Objects.requireNonNull(o, "other quaternion cannot be null");
-        return this.multiply(o.reciprocal());
+    @Override
+    public Quaternion<T> negate() {
+        return new Quaternion<>(
+            scalarRing.negate(w),
+            scalarRing.negate(x),
+            scalarRing.negate(y),
+            scalarRing.negate(z),
+            scalarRing
+        );
+    }
+
+    @Override
+    public Quaternion<T> subtract(Quaternion<T> o) {
+        checkSameRing(o);
+        return new Quaternion<>(
+            scalarRing.subtract(w, o.w),
+            scalarRing.subtract(x, o.x),
+            scalarRing.subtract(y, o.y),
+            scalarRing.subtract(z, o.z),
+            scalarRing
+        );
+    }
+
+    @Override
+    public Quaternion<T> multiply(Quaternion<T> o) {
+        checkSameRing(o);
+        T newW = scalarRing.subtract(
+            scalarRing.subtract(scalarRing.multiply(w, o.w), scalarRing.multiply(x, o.x)),
+            scalarRing.add(scalarRing.multiply(y, o.y), scalarRing.multiply(z, o.z))
+        );
+        T newX = scalarRing.subtract(
+            scalarRing.add(scalarRing.multiply(w, o.x), scalarRing.multiply(x, o.w)),
+            scalarRing.subtract(scalarRing.multiply(z, o.y), scalarRing.multiply(y, o.z))
+        );
+        T newY = scalarRing.add(
+            scalarRing.subtract(scalarRing.multiply(w, o.y), scalarRing.multiply(x, o.z)),
+            scalarRing.add(scalarRing.multiply(y, o.w), scalarRing.multiply(z, o.x))
+        );
+        T newZ = scalarRing.add(
+            scalarRing.add(scalarRing.multiply(w, o.z), scalarRing.multiply(x, o.y)),
+            scalarRing.subtract(scalarRing.multiply(z, o.w), scalarRing.multiply(y, o.x))
+        );
+        return new Quaternion<>(newW, newX, newY, newZ, scalarRing);
+    }
+
+    public Quaternion<T> reciprocal() {
+        return tryReciprocal().orElseThrow(
+            () -> new NonInvertibleElementException("Quaternion element is not invertible: " + this)
+        );
+    }
+
+    public Optional<Quaternion<T>> tryReciprocal() {
+        T nSq = normSq();
+        if (scalarRing instanceof Field<T> field) {
+            if (field.isZero(nSq)) {
+                return Optional.empty();
+            }
+            T invNorm = field.reciprocal(nSq);
+            return Optional.of(conjugate().scale(invNorm));
+        }
+        if (scalarRing.isOne(nSq)) {
+            return Optional.of(conjugate());
+        }
+        if (scalarRing.isOne(scalarRing.negate(nSq))) {
+            return Optional.of(conjugate().negate());
+        }
+        if (scalarRing instanceof IntegralDomain<T> domain && !domain.isUnit(nSq)) {
+            return Optional.empty();
+        }
+        throw new UndefinedOperationException("General quaternion reciprocal requires a scalar Field");
+    }
+
+    private void checkSameRing(Quaternion<T> other) {
+        Objects.requireNonNull(other, "other quaternion cannot be null");
+        if (!Objects.equals(this.scalarRing, other.scalarRing)) {
+            throw new IncompatibleAlgebraException(
+                "Quaternion scalar rings do not match: " + this.scalarRing + " vs " + other.scalarRing
+            );
+        }
     }
 
     @Override
     public String toString() {
-        if (isZero()) {
-            return "0.0";
-        }
-        StringBuilder sb = new StringBuilder();
-        if (w != 0.0) {
-            sb.append(w);
-        }
-        appendImaginaryTerm(sb, x, "i");
-        appendImaginaryTerm(sb, y, "j");
-        appendImaginaryTerm(sb, z, "k");
-        return sb.toString();
-    }
-
-    private static void appendImaginaryTerm(StringBuilder sb, double coeff, String basis) {
-        if (coeff == 0.0) {
-            return;
-        }
-        if (sb.isEmpty()) {
-            if (coeff == 1.0) {
-                sb.append(basis);
-            } else if (coeff == -1.0) {
-                sb.append('-').append(basis);
-            } else {
-                sb.append(coeff).append(basis);
-            }
-        } else if (coeff < 0.0) {
-            double abs = Math.abs(coeff);
-            sb.append(" - ");
-            if (abs != 1.0) {
-                sb.append(abs);
-            }
-            sb.append(basis);
-        } else {
-            sb.append(" + ");
-            if (coeff != 1.0) {
-                sb.append(coeff);
-            }
-            sb.append(basis);
-        }
+        return "(" + w + " + " + x + "i + " + y + "j + " + z + "k)";
     }
 }

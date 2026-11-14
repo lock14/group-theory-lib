@@ -1,191 +1,180 @@
 package lock14.algebra.numbers;
 
+import java.math.BigInteger;
 import java.util.Objects;
-import lock14.algebra.context.AlgebraicContext;
-import lock14.algebra.element.FieldElement;
+import java.util.Optional;
+import lock14.algebra.element.RingElement;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
+import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.exceptions.UndefinedOperationException;
+import lock14.algebra.structure.CommutativeRing;
 import lock14.algebra.structure.Field;
 
 /**
- * An immutable Complex number (a + bi) over IEEE-754 double-precision floating point.
+ * Exact quadratic hypercomplex element {@code a + b*i} ({@code i^2 = -1}) parameterized over any
+ * {@link CommutativeRing} {@code T} (such as {@link Integers#RING} for Gaussian integers {@code Z[i]}
+ * or {@link Rationals#FIELD} for Gaussian rationals {@code Q(i)}).
+ *
+ * @param <T> the scalar ring element type
  */
-public record Complex(double real, double imaginary) implements FieldElement<Complex> {
+public record Complex<T>(T real, T imaginary, CommutativeRing<T> scalarRing) implements RingElement<Complex<T>> {
 
     public Complex {
-        real = (real == 0.0) ? 0.0 : real;
-        imaginary = (imaginary == 0.0) ? 0.0 : imaginary;
+        Objects.requireNonNull(real, "real cannot be null");
+        Objects.requireNonNull(imaginary, "imaginary cannot be null");
+        Objects.requireNonNull(scalarRing, "scalarRing cannot be null");
     }
 
-    public static final Complex ZERO = new Complex(0.0, 0.0);
-    public static final Complex ONE = new Complex(1.0, 0.0);
-    public static final Complex I = new Complex(0.0, 1.0);
-
-    public static Complex of(double real, double imaginary) {
-        return new Complex(real, imaginary);
+    public static <T> Complex<T> of(CommutativeRing<T> ring, T real, T imaginary) {
+        return new Complex<>(real, imaginary, ring);
     }
 
-    public static Complex real(double real) {
-        return new Complex(real, 0.0);
+    public static <T> Complex<T> real(CommutativeRing<T> ring, T real) {
+        return new Complex<>(real, ring.zero(), ring);
     }
 
-    public static Complex imaginary(double imaginary) {
-        return new Complex(0.0, imaginary);
+    public static <T> Complex<T> imaginary(CommutativeRing<T> ring, T imaginary) {
+        return new Complex<>(ring.zero(), imaginary, ring);
     }
 
-    public static Complex ofPolar(double radius, double theta) {
-        if (radius < 0.0) {
-            throw new IllegalArgumentException("Radius must be non-negative: " + radius);
-        }
-        return new Complex(radius * Math.cos(theta), radius * Math.sin(theta));
+    public static Complex<BigInteger> gaussian(long real, long imaginary) {
+        return new Complex<>(BigInteger.valueOf(real), BigInteger.valueOf(imaginary), Integers.RING);
     }
 
-    public static Field<Complex> field() {
-        return ComplexField.INSTANCE;
+    public static Complex<BigInteger> gaussian(BigInteger real, BigInteger imaginary) {
+        return new Complex<>(real, imaginary, Integers.RING);
+    }
+
+    public static Complex<Rational> ofRational(Rational real, Rational imaginary) {
+        return new Complex<>(real, imaginary, Rationals.FIELD);
+    }
+
+    public static Complex<Rational> ofRational(long real, long imaginary) {
+        return new Complex<>(Rational.of(real), Rational.of(imaginary), Rationals.FIELD);
     }
 
     public boolean isZero() {
-        return real == 0.0 && imaginary == 0.0;
+        return scalarRing.isZero(real) && scalarRing.isZero(imaginary);
     }
 
     public boolean isOne() {
-        return real == 1.0 && imaginary == 0.0;
+        return scalarRing.isOne(real) && scalarRing.isZero(imaginary);
+    }
+
+    public Complex<T> conjugate() {
+        return new Complex<>(real, scalarRing.negate(imaginary), scalarRing);
     }
 
     /**
-     * Checks whether this complex number is within {@link AlgebraicContext#currentEpsilon()} of {@code other}.
+     * Algebraic norm {@code N(a + bi) = a^2 + b^2} in {@code scalarRing}.
      */
-    public boolean approxEquals(Complex other) {
-        Objects.requireNonNull(other, "other cannot be null");
-        if (this.equals(other)) {
-            return true;
-        }
-        return this.subtract(other).abs() <= AlgebraicContext.currentEpsilon();
+    public T normSq() {
+        return scalarRing.add(
+            scalarRing.multiply(real, real),
+            scalarRing.multiply(imaginary, imaginary)
+        );
     }
 
-    public double normSq() {
-        return real * real + imaginary * imaginary;
-    }
-
-    public double abs() {
-        return Math.hypot(real, imaginary);
-    }
-
-    public double arg() {
-        return Math.atan2(imaginary, real);
-    }
-
-    public Complex conjugate() {
-        return new Complex(real, imaginary == 0.0 ? 0.0 : -imaginary);
-    }
-
-    public Complex scale(double scalar) {
-        return new Complex(real * scalar, imaginary * scalar);
-    }
-
-    @Override
-    public Complex add(Complex other) {
-        Objects.requireNonNull(other, "other cannot be null");
-        return new Complex(this.real + other.real, this.imaginary + other.imaginary);
-    }
-
-    @Override
-    public Complex negate() {
-        return new Complex(
-            real == 0.0 ? 0.0 : -real,
-            imaginary == 0.0 ? 0.0 : -imaginary
+    public Complex<T> scale(T scalar) {
+        Objects.requireNonNull(scalar, "scalar cannot be null");
+        return new Complex<>(
+            scalarRing.multiply(scalar, real),
+            scalarRing.multiply(scalar, imaginary),
+            scalarRing
         );
     }
 
     @Override
-    public Complex subtract(Complex other) {
-        Objects.requireNonNull(other, "other cannot be null");
-        return new Complex(this.real - other.real, this.imaginary - other.imaginary);
-    }
-
-    @Override
-    public Complex multiply(Complex other) {
-        Objects.requireNonNull(other, "other cannot be null");
-        return new Complex(
-            this.real * other.real - this.imaginary * other.imaginary,
-            this.real * other.imaginary + this.imaginary * other.real
+    public Complex<T> add(Complex<T> other) {
+        checkSameRing(other);
+        return new Complex<>(
+            scalarRing.add(this.real, other.real),
+            scalarRing.add(this.imaginary, other.imaginary),
+            scalarRing
         );
     }
 
     @Override
-    public Complex reciprocal() {
-        if (isZero()) {
-            throw new ArithmeticException("Cannot invert complex zero");
-        }
-        double c = this.real;
-        double d = this.imaginary;
-        if (Math.abs(c) >= Math.abs(d)) {
-            double ratio = d / c;
-            double denom = c + d * ratio;
-            return new Complex(1.0 / denom, -ratio / denom);
-        } else {
-            double ratio = c / d;
-            double denom = c * ratio + d;
-            return new Complex(ratio / denom, -1.0 / denom);
-        }
+    public Complex<T> negate() {
+        return new Complex<>(
+            scalarRing.negate(real),
+            scalarRing.negate(imaginary),
+            scalarRing
+        );
     }
 
     @Override
-    public Complex divide(Complex other) {
+    public Complex<T> subtract(Complex<T> other) {
+        checkSameRing(other);
+        return new Complex<>(
+            scalarRing.subtract(this.real, other.real),
+            scalarRing.subtract(this.imaginary, other.imaginary),
+            scalarRing
+        );
+    }
+
+    @Override
+    public Complex<T> multiply(Complex<T> other) {
+        checkSameRing(other);
+        T re = scalarRing.subtract(
+            scalarRing.multiply(this.real, other.real),
+            scalarRing.multiply(this.imaginary, other.imaginary)
+        );
+        T im = scalarRing.add(
+            scalarRing.multiply(this.real, other.imaginary),
+            scalarRing.multiply(this.imaginary, other.real)
+        );
+        return new Complex<>(re, im, scalarRing);
+    }
+
+    /**
+     * Computes the exact multiplicative inverse {@code conjugate() / normSq()} when {@code scalarRing}
+     * is a {@link Field} (or {@code normSq()} is a unit).
+     */
+    public Complex<T> reciprocal() {
+        return tryReciprocal().orElseThrow(
+            () -> new NonInvertibleElementException("Complex element is not invertible: " + this)
+        );
+    }
+
+    public Optional<Complex<T>> tryReciprocal() {
+        T nSq = normSq();
+        if (scalarRing instanceof Field<T> field) {
+            if (field.isZero(nSq)) {
+                return Optional.empty();
+            }
+            T invNorm = field.reciprocal(nSq);
+            return Optional.of(new Complex<>(
+                field.multiply(real, invNorm),
+                field.multiply(field.negate(imaginary), invNorm),
+                scalarRing
+            ));
+        }
+        if (scalarRing.isOne(nSq)) {
+            return Optional.of(conjugate());
+        }
+        throw new UndefinedOperationException(
+            "General reciprocal requires a scalar Field; use GaussianIntegers or ComplexRing for ring operations"
+        );
+    }
+
+    private void checkSameRing(Complex<T> other) {
         Objects.requireNonNull(other, "other cannot be null");
-        if (other.isZero()) {
-            throw new ArithmeticException("Division by complex zero");
+        if (!Objects.equals(this.scalarRing, other.scalarRing)) {
+            throw new IncompatibleAlgebraException(
+                "Complex scalar rings do not match: " + this.scalarRing + " vs " + other.scalarRing
+            );
         }
-        double a = this.real;
-        double b = this.imaginary;
-        double c = other.real;
-        double d = other.imaginary;
-
-        if (Math.abs(c) >= Math.abs(d)) {
-            double ratio = d / c;
-            double denom = c + d * ratio;
-            return new Complex((a + b * ratio) / denom, (b - a * ratio) / denom);
-        } else {
-            double ratio = c / d;
-            double denom = c * ratio + d;
-            return new Complex((a * ratio + b) / denom, (b * ratio - a) / denom);
-        }
-    }
-
-    public Complex exp() {
-        double expReal = Math.exp(real);
-        return new Complex(expReal * Math.cos(imaginary), expReal * Math.sin(imaginary));
-    }
-
-    public Complex log() {
-        return new Complex(Math.log(abs()), arg());
-    }
-
-    public Complex pow(Complex exponent) {
-        Objects.requireNonNull(exponent, "exponent cannot be null");
-        if (Double.isNaN(exponent.real) || Double.isNaN(exponent.imaginary)) {
-            return new Complex(Double.NaN, Double.NaN);
-        }
-        if (isZero()) {
-            if (exponent.isZero()) {
-                return ONE;
-            }
-            if (exponent.real > 0.0) {
-                return ZERO;
-            }
-            throw new ArithmeticException("Division by zero or undefined complex power for zero base with exponent: " + exponent);
-        }
-        return this.log().multiply(exponent).exp();
     }
 
     @Override
     public String toString() {
-        if (imaginary == 0.0) return Double.toString(real);
-        if (real == 0.0) {
-            if (imaginary == 1.0) return "i";
-            if (imaginary == -1.0) return "-i";
-            return imaginary + "i";
+        if (scalarRing.isZero(imaginary)) {
+            return real.toString();
         }
-        String sign = imaginary > 0 ? " + " : " - ";
-        double absIm = Math.abs(imaginary);
-        return real + sign + (absIm == 1.0 ? "" : absIm) + "i";
+        if (scalarRing.isZero(real)) {
+            return scalarRing.isOne(imaginary) ? "i" : imaginary + "i";
+        }
+        return real + " + " + imaginary + "i";
     }
 }

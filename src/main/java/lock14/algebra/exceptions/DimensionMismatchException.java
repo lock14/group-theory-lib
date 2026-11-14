@@ -1,5 +1,8 @@
 package lock14.algebra.exceptions;
 
+/**
+ * Thrown when vector or matrix dimensions do not satisfy operation constraints.
+ */
 public class DimensionMismatchException extends IllegalArgumentException {
     public DimensionMismatchException(String message) {
         super(message);

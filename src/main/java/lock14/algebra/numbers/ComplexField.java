@@ -1,70 +1,94 @@
 package lock14.algebra.numbers;
 
+import java.util.Objects;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.structure.Field;
 
 /**
- * The Field of Complex numbers (C, +, *).
+ * The Quadratic Extension Field {@code F(i) = F[x]/(x^2 + 1)} over any {@link Field} {@code F}
+ * in which {@code -1} is not a square (such as {@link Rationals#FIELD} {@code Q(i)} or {@code F_p} with {@code p = 3 mod 4}).
+ *
+ * @param <T> scalar field element type
  */
-public final class ComplexField implements Field<Complex> {
+public record ComplexField<T>(Field<T> scalarField) implements Field<Complex<T>> {
 
-    public static final ComplexField INSTANCE = new ComplexField();
+    public ComplexField {
+        Objects.requireNonNull(scalarField, "scalarField cannot be null");
+    }
 
-    private ComplexField() {}
+    public static ComplexField<Rational> overRationals() {
+        return new ComplexField<>(Rationals.FIELD);
+    }
 
-    @Override
-    public Complex zero() {
-        return Complex.ZERO;
+    public Complex<T> of(T real, T imaginary) {
+        return Complex.of(scalarField, real, imaginary);
+    }
+
+    public Complex<T> i() {
+        return Complex.imaginary(scalarField, scalarField.one());
     }
 
     @Override
-    public Complex one() {
-        return Complex.ONE;
+    public Complex<T> zero() {
+        return new Complex<>(scalarField.zero(), scalarField.zero(), scalarField);
     }
 
     @Override
-    public Complex add(Complex a, Complex b) {
+    public Complex<T> one() {
+        return new Complex<>(scalarField.one(), scalarField.zero(), scalarField);
+    }
+
+    @Override
+    public Complex<T> add(Complex<T> a, Complex<T> b) {
+        checkInField(a);
+        checkInField(b);
         return a.add(b);
     }
 
     @Override
-    public Complex negate(Complex a) {
+    public Complex<T> negate(Complex<T> a) {
+        checkInField(a);
         return a.negate();
     }
 
     @Override
-    public Complex subtract(Complex a, Complex b) {
+    public Complex<T> subtract(Complex<T> a, Complex<T> b) {
+        checkInField(a);
+        checkInField(b);
         return a.subtract(b);
     }
 
     @Override
-    public Complex multiply(Complex a, Complex b) {
+    public Complex<T> multiply(Complex<T> a, Complex<T> b) {
+        checkInField(a);
+        checkInField(b);
         return a.multiply(b);
     }
 
     @Override
-    public Complex reciprocal(Complex a) {
+    public Complex<T> reciprocal(Complex<T> a) {
+        checkInField(a);
         return a.reciprocal();
     }
 
     @Override
-    public Complex divide(Complex a, Complex b) {
-        return a.divide(b);
-    }
-
-    @Override
-    public boolean isZero(Complex element) {
+    public boolean isZero(Complex<T> element) {
+        checkInField(element);
         return element.isZero();
     }
 
     @Override
-    public boolean isOne(Complex element) {
+    public boolean isOne(Complex<T> element) {
+        checkInField(element);
         return element.isOne();
     }
 
-    /**
-     * Checks whether {@code a} and {@code b} are within {@link lock14.algebra.context.AlgebraicContext#currentEpsilon()}.
-     */
-    public boolean approxEquals(Complex a, Complex b) {
-        return a.approxEquals(b);
+    private void checkInField(Complex<T> c) {
+        Objects.requireNonNull(c, "complex element cannot be null");
+        if (!Objects.equals(c.scalarRing(), this.scalarField)) {
+            throw new IncompatibleAlgebraException(
+                "Complex scalar ring " + c.scalarRing() + " does not match field " + this.scalarField
+            );
+        }
     }
 }

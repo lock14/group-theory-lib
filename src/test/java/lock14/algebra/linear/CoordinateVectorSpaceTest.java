@@ -1,18 +1,18 @@
 package lock14.algebra.linear;
 
+import lock14.algebra.laws.VectorSpaceLaws;
+import lock14.algebra.numbers.Rational;
+import lock14.algebra.numbers.Rationals;
+import lock14.algebra.structure.VectorSpace;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
-import lock14.algebra.laws.VectorSpaceLaws;
-import lock14.algebra.numbers.Rational;
-import lock14.algebra.numbers.RationalField;
-import lock14.algebra.structure.VectorSpace;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoordinateVectorSpaceTest extends VectorSpaceLaws<Vector<Rational>, Rational> {
 
-    private final CoordinateVectorSpace<Rational> space = new CoordinateVectorSpace<>(3, RationalField.INSTANCE);
+    private final CoordinateVectorSpace<Rational> space = new CoordinateVectorSpace<>(3, Rationals.FIELD);
 
     @Override
     protected VectorSpace<Vector<Rational>, Rational> vectorSpace() {
@@ -27,14 +27,14 @@ public class CoordinateVectorSpaceTest extends VectorSpaceLaws<Vector<Rational>,
     @Provide
     Arbitrary<Rational> nonZeroScalars() {
         return Arbitraries.integers().between(-20, 20)
-                .filter(n -> n != 0)
-                .map(Rational::of);
+            .filter(n -> n != 0)
+            .map(Rational::of);
     }
 
     @Provide
     Arbitrary<Vector<Rational>> vectors() {
         return scalars().list().ofSize(3)
-                .map(coords -> Vector.of(RationalField.INSTANCE, coords));
+            .map(coords -> Vector.of(Rationals.FIELD, coords));
     }
 
     @Test

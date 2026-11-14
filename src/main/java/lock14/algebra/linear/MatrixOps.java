@@ -1,11 +1,12 @@
 package lock14.algebra.linear;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
-import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.exceptions.NonInvertibleElementException;
 import lock14.algebra.exceptions.UndefinedOperationException;
-import lock14.algebra.numbers.Complex;
-import lock14.algebra.numbers.Quaternion;
+import lock14.algebra.group.Permutation;
 import lock14.algebra.structure.CommutativeRing;
 import lock14.algebra.structure.DivisionRing;
 import lock14.algebra.structure.EuclideanDomain;
@@ -13,7 +14,7 @@ import lock14.algebra.structure.Field;
 import lock14.algebra.structure.Ring;
 
 /**
- * Pure functional numerical and algorithmic kernels for Matrix operations.
+ * Pure exact algorithmic kernels for {@link Matrix}, {@link SquareMatrix}, and {@link RectangularMatrix}.
  */
 final class MatrixOps {
 
@@ -37,6 +38,23 @@ final class MatrixOps {
             }
         }
         return flat;
+    }
+
+    static <T> Matrix<T> submatrix(Ring<T> ring, Object[] data, int rows, int cols, int r0, int r1, int c0, int c1) {
+        if (r0 < 0 || r1 > rows || r0 >= r1 || c0 < 0 || c1 > cols || c0 >= c1) {
+            throw new IndexOutOfBoundsException(
+                String.format("Invalid submatrix range [%d, %d) x [%d, %d) for %dx%d matrix", r0, r1, c0, c1, rows, cols)
+            );
+        }
+        int subRows = r1 - r0;
+        int subCols = c1 - c0;
+        Object[] sub = new Object[subRows * subCols];
+        for (int r = 0; r < subRows; r++) {
+            System.arraycopy(data, (r0 + r) * cols + c0, sub, r * subCols, subCols);
+        }
+        return subRows == subCols
+            ? new SquareMatrix<>(subRows, ring, sub)
+            : new RectangularMatrix<>(subRows, subCols, ring, sub);
     }
 
     @SuppressWarnings("unchecked")
@@ -78,8 +96,6 @@ final class MatrixOps {
     @SuppressWarnings("unchecked")
     static <T> Object[] multiply(Ring<T> ring, Object[] a, Object[] b, int rowsA, int colsA, int colsB) {
         Object[] result = new Object[rowsA * colsB];
-
-        // Cache-friendly i-k-j loop order
         for (int i = 0; i < rowsA; i++) {
             int outRowOffset = i * colsB;
             int thisRowOffset = i * colsA;
@@ -176,7 +192,7 @@ final class MatrixOps {
             );
         }
         if (ring instanceof Field<T> field) {
-            return determinantOverField(field, data, n);
+            return lu(field, data, n).determinant();
         }
         if (ring instanceof EuclideanDomain<T> domain) {
             return determinantBareiss(domain, data, n);
@@ -185,55 +201,231 @@ final class MatrixOps {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T determinantOverField(Field<T> field, Object[] data, int n) {
-        Object[][] a = new Object[n][n];
+    static <T> LuDecomposition<T> lu(Ring<T> ring, Object[] data, int n) {
+        if (!(ring instanceof Field<T> field)) {
+            throw new UndefinedOperationException("LU decomposition requires a Field, got: " + ring);
+        }
+        Object[][] u = new Object[n][n];
+        Object[][] l = new Object[n][n];
+        T zero = field.zero();
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                a[i][j] = data[i * n + j];
+                u[i][j] = data[i * n + j];
+                l[i][j] = zero;
             }
         }
 
-        T det = field.one();
-        int sign = 1;
-
+        int[] perm = new int[n];
         for (int i = 0; i < n; i++) {
-            int pivot = selectPivotRow(field, a, i, i, n);
+            perm[i] = i;
+        }
+        int swapSign = 1;
+
+        for (int k = 0; k < n; k++) {
+            int pivot = -1;
+            for (int r = k; r < n; r++) {
+                if (!field.isZero((T) u[r][k])) {
+                    pivot = r;
+                    break;
+                }
+            }
             if (pivot == -1) {
-                return field.zero();
+                l[k][k] = field.one();
+                continue;
             }
-            if (pivot != i) {
-                Object[] temp = a[i];
-                a[i] = a[pivot];
-                a[pivot] = temp;
-                sign = -sign;
+            if (pivot != k) {
+                Object[] tmpU = u[k];
+                u[k] = u[pivot];
+                u[pivot] = tmpU;
+
+                for (int c = 0; c < k; c++) {
+                    Object tmpL = l[k][c];
+                    l[k][c] = l[pivot][c];
+                    l[pivot][c] = tmpL;
+                }
+
+                int tmpP = perm[k];
+                perm[k] = perm[pivot];
+                perm[pivot] = tmpP;
+                swapSign = -swapSign;
             }
 
-            T pivotVal = (T) a[i][i];
-            det = field.multiply(det, pivotVal);
-
-            for (int r = i + 1; r < n; r++) {
-                if (!field.isZero((T) a[r][i])) {
-                    T factor = field.divide((T) a[r][i], pivotVal);
-                    for (int c = i; c < n; c++) {
-                        a[r][c] = field.subtract((T) a[r][c], field.multiply(factor, (T) a[i][c]));
+            l[k][k] = field.one();
+            T pivotVal = (T) u[k][k];
+            for (int i = k + 1; i < n; i++) {
+                T entry = (T) u[i][k];
+                if (!field.isZero(entry)) {
+                    T factor = field.divide(entry, pivotVal);
+                    l[i][k] = factor;
+                    u[i][k] = zero;
+                    for (int j = k + 1; j < n; j++) {
+                        u[i][j] = field.subtract((T) u[i][j], field.multiply(factor, (T) u[k][j]));
                     }
                 }
             }
         }
 
-        return sign < 0 ? field.negate(det) : det;
+        Object[] flatL = new Object[n * n];
+        Object[] flatU = new Object[n * n];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(l[i], 0, flatL, i * n, n);
+            System.arraycopy(u[i], 0, flatU, i * n, n);
+        }
+        return new LuDecomposition<>(
+            Permutation.of(perm),
+            new SquareMatrix<>(n, field, flatL),
+            new SquareMatrix<>(n, field, flatU),
+            swapSign,
+            field
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> RrefResult<T> rref(Ring<T> ring, Object[] data, int rows, int cols) {
+        if (!(ring instanceof DivisionRing<T> divRing)) {
+            throw new UndefinedOperationException("RREF requires a DivisionRing or Field, got: " + ring);
+        }
+        Object[][] m = new Object[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            System.arraycopy(data, r * cols, m[r], 0, cols);
+        }
+
+        List<Integer> pivots = new ArrayList<>();
+        int leadRow = 0;
+
+        for (int col = 0; col < cols && leadRow < rows; col++) {
+            int pivot = -1;
+            for (int r = leadRow; r < rows; r++) {
+                if (!divRing.isZero((T) m[r][col])) {
+                    pivot = r;
+                    break;
+                }
+            }
+            if (pivot == -1) {
+                continue;
+            }
+            if (pivot != leadRow) {
+                Object[] tmp = m[leadRow];
+                m[leadRow] = m[pivot];
+                m[pivot] = tmp;
+            }
+
+            T invPivot = divRing.reciprocal((T) m[leadRow][col]);
+            for (int c = col; c < cols; c++) {
+                m[leadRow][c] = divRing.multiply(invPivot, (T) m[leadRow][c]);
+            }
+
+            for (int r = 0; r < rows; r++) {
+                if (r != leadRow && !divRing.isZero((T) m[r][col])) {
+                    T factor = (T) m[r][col];
+                    for (int c = col; c < cols; c++) {
+                        m[r][c] = divRing.subtract((T) m[r][c], divRing.multiply(factor, (T) m[leadRow][c]));
+                    }
+                }
+            }
+            pivots.add(col);
+            leadRow++;
+        }
+
+        Object[] flat = new Object[rows * cols];
+        for (int r = 0; r < rows; r++) {
+            System.arraycopy(m[r], 0, flat, r * cols, cols);
+        }
+        Matrix<T> reduced = rows == cols
+            ? new SquareMatrix<>(rows, ring, flat)
+            : new RectangularMatrix<>(rows, cols, ring, flat);
+        return new RrefResult<>(reduced, pivots, pivots.size(), cols - pivots.size());
+    }
+
+    static <T> List<Vector<T>> kernel(RrefResult<T> rref) {
+        Matrix<T> red = rref.reduced();
+        @SuppressWarnings("unchecked")
+        DivisionRing<T> divRing = (DivisionRing<T>) red.ring();
+        int cols = red.cols();
+        List<Integer> pivots = rref.pivotColumns();
+        boolean[] isPivot = new boolean[cols];
+        for (int p : pivots) {
+            isPivot[p] = true;
+        }
+
+        List<Vector<T>> basis = new ArrayList<>(rref.nullity());
+        T zero = divRing.zero();
+        T one = divRing.one();
+        for (int freeCol = 0; freeCol < cols; freeCol++) {
+            if (isPivot[freeCol]) {
+                continue;
+            }
+            Object[] vec = new Object[cols];
+            Arrays.fill(vec, zero);
+            vec[freeCol] = one;
+            for (int i = 0; i < pivots.size(); i++) {
+                int pivotCol = pivots.get(i);
+                vec[pivotCol] = divRing.negate(red.get(i, freeCol));
+            }
+            basis.add(new Vector<>(cols, divRing, vec));
+        }
+        return List.copyOf(basis);
     }
 
     /**
-     * Bareiss fraction-free Gaussian elimination in O(n^3) exact divisions over any EuclideanDomain.
+     * Left-row Gauss-Jordan linear system solver for {@code A * X = B} over any {@link DivisionRing} {@code D}.
      */
+    @SuppressWarnings("unchecked")
+    static <T> Object[] solve(Ring<T> ring, Object[] aData, Object[] bData, int n, int rhsCols) {
+        if (!(ring instanceof DivisionRing<T> divRing)) {
+            throw new UndefinedOperationException("Linear system solving / inversion requires a DivisionRing: " + ring);
+        }
+        int totalCols = n + rhsCols;
+        Object[][] aug = new Object[n][totalCols];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(aData, i * n, aug[i], 0, n);
+            System.arraycopy(bData, i * rhsCols, aug[i], n, rhsCols);
+        }
+
+        for (int i = 0; i < n; i++) {
+            int pivot = -1;
+            for (int r = i; r < n; r++) {
+                if (!divRing.isZero((T) aug[r][i])) {
+                    pivot = r;
+                    break;
+                }
+            }
+            if (pivot == -1) {
+                throw new NonInvertibleElementException("Matrix is singular");
+            }
+            if (pivot != i) {
+                Object[] tmp = aug[i];
+                aug[i] = aug[pivot];
+                aug[pivot] = tmp;
+            }
+
+            T invPivot = divRing.reciprocal((T) aug[i][i]);
+            for (int c = i; c < totalCols; c++) {
+                aug[i][c] = divRing.multiply(invPivot, (T) aug[i][c]);
+            }
+
+            for (int r = 0; r < n; r++) {
+                if (r != i && !divRing.isZero((T) aug[r][i])) {
+                    T factor = (T) aug[r][i];
+                    for (int c = i; c < totalCols; c++) {
+                        aug[r][c] = divRing.subtract((T) aug[r][c], divRing.multiply(factor, (T) aug[i][c]));
+                    }
+                }
+            }
+        }
+
+        Object[] sol = new Object[n * rhsCols];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(aug[i], n, sol, i * rhsCols, rhsCols);
+        }
+        return sol;
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T determinantBareiss(EuclideanDomain<T> domain, Object[] data, int n) {
         Object[][] m = new Object[n][n];
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                m[i][j] = data[i * n + j];
-            }
+            System.arraycopy(data, i * n, m[i], 0, n);
         }
 
         int sign = 1;
@@ -274,10 +466,6 @@ final class MatrixOps {
         return sign < 0 ? domain.negate(det) : det;
     }
 
-    /**
-     * Richard Bird's (2011) division-free O(n^4) determinant algorithm over any CommutativeRing
-     * (including rings with zero divisors or non-zero characteristic, using only +, -, *).
-     */
     @SuppressWarnings("unchecked")
     private static <T> T determinantBird(CommutativeRing<T> ring, Object[] data, int n) {
         Object[][] a = new Object[n][n];
@@ -332,99 +520,5 @@ final class MatrixOps {
 
         T val = (T) x[0][0];
         return (n % 2 == 1) ? val : ring.negate(val);
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> Object[] inverse(Ring<T> ring, Object[] data, int n) {
-        if (!(ring instanceof DivisionRing<T> divRing)) {
-            throw new UnsupportedOperationException("Matrix inversion requires a DivisionRing: " + ring);
-        }
-        Object[][] aug = new Object[n][2 * n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                aug[i][j] = data[i * n + j];
-                aug[i][j + n] = (i == j) ? divRing.one() : divRing.zero();
-            }
-        }
-
-        for (int i = 0; i < n; i++) {
-            int pivot = selectPivotRow(divRing, aug, i, i, n);
-            if (pivot == -1) {
-                throw new NonInvertibleElementException("Matrix is singular");
-            }
-            if (pivot != i) {
-                Object[] temp = aug[i];
-                aug[i] = aug[pivot];
-                aug[pivot] = temp;
-            }
-
-            T pivotVal = (T) aug[i][i];
-            T invPivot = divRing.reciprocal(pivotVal);
-            // Left-multiply row i by invPivot so non-commutative division rings preserve E * [A | I]
-            for (int c = 0; c < 2 * n; c++) {
-                aug[i][c] = divRing.multiply(invPivot, (T) aug[i][c]);
-            }
-
-            for (int r = 0; r < n; r++) {
-                if (r != i && !divRing.isZero((T) aug[r][i])) {
-                    T factor = (T) aug[r][i];
-                    for (int c = 0; c < 2 * n; c++) {
-                        aug[r][c] = divRing.subtract((T) aug[r][c], divRing.multiply(factor, (T) aug[i][c]));
-                    }
-                }
-            }
-        }
-
-        Object[] invData = new Object[n * n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                invData[i * n + j] = aug[i][j + n];
-            }
-        }
-        return invData;
-    }
-
-    /**
-     * Selects a non-zero pivot row in {@code col} starting at {@code startRow}.
-     * Uses partial pivoting (maximizing magnitude) for floating-point / normed division rings
-     * (such as {@code RealField}, {@code ComplexField}, and {@code QuaternionRing}) to preserve
-     * numerical stability, and treats candidate pivots {@code <= AlgebraicContext.currentEpsilon()}
-     * as numerically zero when {@link AlgebraicContext#EPSILON} is bound.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> int selectPivotRow(Ring<T> ring, Object[][] mat, int col, int startRow, int n) {
-        int bestRow = -1;
-        double bestMagnitude = -1.0;
-        double minPivot = AlgebraicContext.EPSILON.isBound() ? AlgebraicContext.currentEpsilon() : 0.0;
-
-        for (int r = startRow; r < n; r++) {
-            T candidate = (T) mat[r][col];
-            if (ring.isZero(candidate)) {
-                continue;
-            }
-            double mag = pivotMagnitude(candidate);
-            if (Double.isNaN(mag)) {
-                // Non-numeric / exact symbolic ring: first non-zero pivot is exact
-                return r;
-            }
-            if (mag <= minPivot) {
-                continue;
-            }
-            if (bestRow == -1 || mag > bestMagnitude) {
-                bestRow = r;
-                bestMagnitude = mag;
-            }
-        }
-        return bestRow;
-    }
-
-    private static double pivotMagnitude(Object element) {
-        return switch (element) {
-            case Double d -> Math.abs(d);
-            case Float f -> Math.abs(f);
-            case Complex c -> c.abs();
-            case Quaternion q -> q.abs();
-            default -> Double.NaN;
-        };
     }
 }

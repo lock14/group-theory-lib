@@ -4,15 +4,17 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.Objects;
-import lock14.algebra.context.AlgebraicContext;
+import java.util.Optional;
 import lock14.algebra.element.FieldElement;
+import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.numeric.NumericContext;
 import lock14.algebra.structure.Field;
 
 /**
- * An exact, immutable rational number (fraction) backed by {@link BigInteger}.
- * Fractions are always maintained in canonical reduced form (irreducible with positive denominator).
+ * An exact, immutable rational number {@code p / q} in canonical reduced form ({@code gcd(|p|, q) = 1, q > 0}).
  */
-public record Rational(BigInteger numerator, BigInteger denominator) implements FieldElement<Rational>, Comparable<Rational> {
+public record Rational(BigInteger numerator, BigInteger denominator)
+    implements FieldElement<Rational>, Comparable<Rational> {
 
     public static final Rational ZERO = new Rational(BigInteger.ZERO, BigInteger.ONE);
     public static final Rational ONE = new Rational(BigInteger.ONE, BigInteger.ONE);
@@ -22,14 +24,14 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
     public Rational {
         Objects.requireNonNull(numerator, "numerator cannot be null");
         Objects.requireNonNull(denominator, "denominator cannot be null");
-        if (denominator.equals(BigInteger.ZERO)) {
-            throw new ArithmeticException("Denominator cannot be zero");
+        if (denominator.signum() == 0) {
+            throw new NonInvertibleElementException("Rational denominator cannot be zero");
         }
         if (denominator.signum() < 0) {
             numerator = numerator.negate();
             denominator = denominator.negate();
         }
-        if (numerator.equals(BigInteger.ZERO)) {
+        if (numerator.signum() == 0) {
             denominator = BigInteger.ONE;
         } else {
             BigInteger gcd = numerator.gcd(denominator);
@@ -57,11 +59,11 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
     }
 
     public static Field<Rational> field() {
-        return RationalField.INSTANCE;
+        return Rationals.FIELD;
     }
 
     public boolean isZero() {
-        return numerator.equals(BigInteger.ZERO);
+        return numerator.signum() == 0;
     }
 
     public boolean isOne() {
@@ -76,23 +78,16 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
         return signum() < 0 ? negate() : this;
     }
 
-    /**
-     * Converts this rational number to a {@link BigDecimal} using the ambient
-     * {@link AlgebraicContext#currentMathContext()} (defaults to {@link MathContext#DECIMAL128}).
-     */
-    public BigDecimal bigDecimalValue() {
-        return bigDecimalValue(AlgebraicContext.currentMathContext());
-    }
-
-    /**
-     * Converts this rational number to a {@link BigDecimal} using the provided {@link MathContext}.
-     */
     public BigDecimal bigDecimalValue(MathContext mathContext) {
         Objects.requireNonNull(mathContext, "mathContext cannot be null");
         if (isZero()) {
             return BigDecimal.ZERO;
         }
         return new BigDecimal(numerator).divide(new BigDecimal(denominator), mathContext);
+    }
+
+    public BigDecimal bigDecimalValue() {
+        return bigDecimalValue(NumericContext.currentMathContext());
     }
 
     public double doubleValue() {
@@ -102,9 +97,7 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
         if (numerator.bitLength() <= 53 && denominator.bitLength() <= 53) {
             return numerator.doubleValue() / denominator.doubleValue();
         }
-        return new BigDecimal(numerator)
-            .divide(new BigDecimal(denominator), MathContext.DECIMAL128)
-            .doubleValue();
+        return bigDecimalValue(MathContext.DECIMAL128).doubleValue();
     }
 
     @Override
@@ -147,9 +140,14 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
     @Override
     public Rational reciprocal() {
         if (isZero()) {
-            throw new ArithmeticException("Cannot compute reciprocal of zero rational");
+            throw new NonInvertibleElementException("Cannot compute reciprocal of zero rational");
         }
         return new Rational(this.denominator, this.numerator);
+    }
+
+    @Override
+    public Optional<Rational> tryReciprocal() {
+        return isZero() ? Optional.empty() : Optional.of(reciprocal());
     }
 
     @Override

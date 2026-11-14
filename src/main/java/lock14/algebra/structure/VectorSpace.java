@@ -1,15 +1,15 @@
 package lock14.algebra.structure;
 
 /**
- * A Vector Space is a {@link Module} whose scalar ring is a {@link Field}.
+ * A Vector Space is a {@link LeftModule} whose scalar ring is a commutative {@link Field}.
  *
  * @param <V> the vector element type
- * @param <F> the scalar field type
+ * @param <F> the scalar field element type
  */
-public interface VectorSpace<V, F> extends Module<V, F> {
+public interface VectorSpace<V, F> extends LeftModule<V, F> {
 
     /**
-     * The scalar field.
+     * The scalar field {@code F}.
      */
     Field<F> scalarField();
 

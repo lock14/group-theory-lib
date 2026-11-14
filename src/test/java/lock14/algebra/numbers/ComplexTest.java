@@ -1,94 +1,58 @@
 package lock14.algebra.numbers;
 
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
+import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.laws.FieldLaws;
+import lock14.algebra.quotient.ZMod;
+import lock14.algebra.structure.Field;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
-import lock14.algebra.laws.ApproximateFieldLaws;
-import lock14.algebra.structure.Field;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 
-public class ComplexTest extends ApproximateFieldLaws<Complex> {
+public class ComplexTest extends FieldLaws<Complex<Rational>> {
 
-    @Override
-    protected Field<Complex> field() {
-        return ComplexField.INSTANCE;
-    }
+    private final ComplexField<Rational> gaussianRationals = ComplexField.overRationals();
 
     @Override
-    protected double distance(Complex a, Complex b) {
-        double scale = Math.max(1.0, Math.max(a.abs(), b.abs()));
-        return a.subtract(b).abs() / scale;
-    }
-
-    @Override
-    protected double tolerance() {
-        return 1e-7;
+    protected Field<Complex<Rational>> field() {
+        return gaussianRationals;
     }
 
     @Provide
-    Arbitrary<Complex> elements() {
-        return Arbitraries.doubles().between(-100.0, 100.0)
-            .flatMap(re ->
-                Arbitraries.doubles().between(-100.0, 100.0)
-                    .map(im -> Complex.of(re, im))
-            );
+    Arbitrary<Complex<Rational>> elements() {
+        Arbitrary<Rational> rats = Arbitraries.integers().between(-30, 30)
+            .flatMap(n -> Arbitraries.integers().between(1, 15).map(d -> Rational.of(n, d)));
+        return rats.flatMap(re -> rats.map(im -> gaussianRationals.of(re, im)));
     }
 
     @Provide
-    Arbitrary<Complex> nonZeroElements() {
-        return elements().filter(c -> c.abs() > 1e-4);
+    Arbitrary<Complex<Rational>> nonZeroElements() {
+        return elements().filter(c -> !c.isZero());
     }
 
     @Test
-    public void testMultiplyAndDivide() {
-        Complex a = Complex.of(2, 3);
-        Complex b = Complex.of(4, 5);
-        assertThat(a.multiply(b)).isEqualTo(Complex.of(-7, 22));
+    public void testExactGaussianRationalDivisionAndGF9Construction() {
+        Complex<Rational> a = Complex.ofRational(2, 3);
+        Complex<Rational> b = Complex.ofRational(4, 5);
+        assertThat(a.multiply(b)).isEqualTo(Complex.ofRational(-7, 22));
 
-        Complex quotient = a.divide(b);
-        assertThat(quotient.real()).isCloseTo(23.0 / 41.0, within(1e-9));
-        assertThat(quotient.imaginary()).isCloseTo(2.0 / 41.0, within(1e-9));
-    }
+        Complex<Rational> quot = gaussianRationals.divide(a, b);
+        assertThat(quot).isEqualTo(Complex.ofRational(Rational.of(23, 41), Rational.of(2, 41)));
+        assertThat(quot.multiply(b)).isEqualTo(a);
+        assertThatThrownBy(() -> gaussianRationals.reciprocal(gaussianRationals.zero()))
+            .isInstanceOf(NonInvertibleElementException.class);
 
-    @Test
-    public void testPolarAndEuler() {
-        Complex c = Complex.ofPolar(2.0, Math.PI / 2.0);
-        assertThat(c.real()).isCloseTo(0.0, within(1e-9));
-        assertThat(c.imaginary()).isCloseTo(2.0, within(1e-9));
+        // Over F_3 (since 3 = 3 mod 4, -1 is a quadratic non-residue), ComplexField(F_3) is GF(9)!
+        var f3 = ZMod.field(3);
+        var gf9 = new ComplexField<>(f3);
+        var z = gf9.of(ZMod.element(f3, 1), ZMod.element(f3, 2));
+        assertThat(gf9.multiply(z, gf9.reciprocal(z))).isEqualTo(gf9.one());
 
-        // Euler's identity: e^(i * pi) + 1 = 0
-        Complex eIpi = Complex.of(0, Math.PI).exp();
-        Complex sum = eIpi.add(Complex.ONE);
-        assertThat(sum.abs()).isCloseTo(0.0, within(1e-9));
-    }
-
-    @Test
-    public void testDivisionByZeroThrows() {
-        assertThatThrownBy(() -> Complex.ONE.divide(Complex.ZERO))
-            .isInstanceOf(ArithmeticException.class);
-    }
-
-    @Test
-    public void testZeroBasePowEdgeCases() {
-        assertThat(Complex.ZERO.pow(Complex.ZERO)).isEqualTo(Complex.ONE);
-        assertThat(Complex.ZERO.pow(Complex.of(2.0, 3.0))).isEqualTo(Complex.ZERO);
-
-        assertThatThrownBy(() -> Complex.ZERO.pow(Complex.of(-2.0, 0.0)))
-            .isInstanceOf(ArithmeticException.class);
-        assertThatThrownBy(() -> Complex.ZERO.pow(Complex.I))
-            .isInstanceOf(ArithmeticException.class);
-    }
-
-    @Test
-    public void testSmithDivisionExtremeScale() {
-        // High magnitude numbers that would overflow c^2 + d^2 in naive division
-        Complex a = Complex.of(1e150, 2e150);
-        Complex b = Complex.of(3e150, 4e150);
-        Complex res = a.divide(b);
-        assertThat(Double.isFinite(res.real())).isTrue();
-        assertThat(Double.isFinite(res.imaginary())).isTrue();
+        var f5 = ZMod.field(5);
+        var c5 = Complex.of(f5, f5.one(), f5.one());
+        assertThatThrownBy(() -> z.add(c5)).isInstanceOf(IncompatibleAlgebraException.class);
     }
 }
