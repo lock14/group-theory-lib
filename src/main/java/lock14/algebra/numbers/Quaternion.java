@@ -52,7 +52,22 @@ public record Quaternion(double w, double x, double y, double z) implements Ring
     }
 
     public double abs() {
-        return Math.sqrt(normSq());
+        if (Double.isInfinite(w) || Double.isInfinite(x) || Double.isInfinite(y) || Double.isInfinite(z)) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double max = maxAbsComponent();
+        if (Double.isNaN(max) || max == 0.0) {
+            return max;
+        }
+        double nw = w / max;
+        double nx = x / max;
+        double ny = y / max;
+        double nz = z / max;
+        return max * Math.sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
+    }
+
+    private double maxAbsComponent() {
+        return Math.max(Math.max(Math.abs(w), Math.abs(x)), Math.max(Math.abs(y), Math.abs(z)));
     }
 
     public Quaternion conjugate() {
@@ -105,11 +120,27 @@ public record Quaternion(double w, double x, double y, double z) implements Ring
     }
 
     public Quaternion reciprocal() {
-        double d = normSq();
-        if (d == 0.0) {
+        if (isZero()) {
             throw new ArithmeticException("Cannot compute reciprocal of zero quaternion");
         }
-        return new Quaternion(w / d, -x / d, -y / d, -z / d);
+        double max = maxAbsComponent();
+        if (Double.isNaN(max)) {
+            return new Quaternion(Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+        }
+        if (Double.isInfinite(max)) {
+            return ZERO;
+        }
+        double nw = w / max;
+        double nx = x / max;
+        double ny = y / max;
+        double nz = z / max;
+        double scaledNormSq = nw * nw + nx * nx + ny * ny + nz * nz;
+        return new Quaternion(
+            (nw / scaledNormSq) / max,
+            (-nx / scaledNormSq) / max,
+            (-ny / scaledNormSq) / max,
+            (-nz / scaledNormSq) / max
+        );
     }
 
     public Quaternion divide(Quaternion o) {

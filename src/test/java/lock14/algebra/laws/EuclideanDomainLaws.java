@@ -32,6 +32,8 @@ public abstract class EuclideanDomainLaws<T> extends IntegralDomainLaws<T> {
         EuclideanDomain<T> d = euclideanDomain();
         T g = d.gcd(a, b);
         assertThat(d.isZero(g)).isFalse();
+        assertThat(g).isEqualTo(d.normalize(g));
+        assertThat(g).isEqualTo(d.gcd(b, a));
         assertThat(d.isZero(d.remainder(a, g))).isTrue();
         assertThat(d.isZero(d.remainder(b, g))).isTrue();
     }
@@ -40,6 +42,7 @@ public abstract class EuclideanDomainLaws<T> extends IntegralDomainLaws<T> {
     public void bezoutExtendedGcdIdentity(@ForAll("elements") T a, @ForAll("elements") T b) {
         EuclideanDomain<T> d = euclideanDomain();
         EuclideanDomain.ExtendedGcdResult<T> ext = d.extendedGcd(a, b);
+        assertThat(ext.gcd()).isEqualTo(d.gcd(a, b));
         T linearCombination = d.add(d.multiply(a, ext.x()), d.multiply(b, ext.y()));
         assertThat(linearCombination).isEqualTo(ext.gcd());
     }

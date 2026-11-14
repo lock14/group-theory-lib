@@ -56,5 +56,11 @@ public class ZModpFieldTest extends FieldLaws<ModuloInteger> {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> f5.isOne(sevenA))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.normalize(sevenA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.gcd(sevenA, f5.zero()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> f5.extendedGcd(sevenA, f5.zero()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

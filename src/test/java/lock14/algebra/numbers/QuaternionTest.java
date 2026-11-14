@@ -76,6 +76,37 @@ public class QuaternionTest extends RingLaws<Quaternion> {
     }
 
     @Test
+    public void testExtremeScaleNormAndReciprocalNoOverflowOrUnderflow() {
+        Quaternion huge = Quaternion.of(1e200, 2e200, -1e200, 2e200);
+        // sqrt(1 + 4 + 1 + 4) * 1e200 = sqrt(10) * 1e200
+        assertThat(huge.abs()).isCloseTo(Math.sqrt(10.0) * 1e200, within(1e186));
+        Quaternion hugeInv = huge.reciprocal();
+        Quaternion hugeProdRight = huge.multiply(hugeInv);
+        Quaternion hugeProdLeft = hugeInv.multiply(huge);
+        assertThat(hugeProdRight.w()).isCloseTo(1.0, within(1e-12));
+        assertThat(hugeProdRight.x()).isCloseTo(0.0, within(1e-12));
+        assertThat(hugeProdRight.y()).isCloseTo(0.0, within(1e-12));
+        assertThat(hugeProdRight.z()).isCloseTo(0.0, within(1e-12));
+        assertThat(hugeProdLeft.w()).isCloseTo(1.0, within(1e-12));
+
+        Quaternion tiny = Quaternion.of(1e-200, 2e-200, -1e-200, 2e-200);
+        assertThat(tiny.abs()).isCloseTo(Math.sqrt(10.0) * 1e-200, within(1e-214));
+        Quaternion tinyInv = tiny.reciprocal();
+        Quaternion tinyProdRight = tiny.multiply(tinyInv);
+        Quaternion tinyProdLeft = tinyInv.multiply(tiny);
+        assertThat(tinyProdRight.w()).isCloseTo(1.0, within(1e-12));
+        assertThat(tinyProdRight.x()).isCloseTo(0.0, within(1e-12));
+        assertThat(tinyProdRight.y()).isCloseTo(0.0, within(1e-12));
+        assertThat(tinyProdRight.z()).isCloseTo(0.0, within(1e-12));
+        assertThat(tinyProdLeft.w()).isCloseTo(1.0, within(1e-12));
+
+        assertThat(Quaternion.scalar(Double.MIN_VALUE).abs()).isEqualTo(Double.MIN_VALUE);
+        assertThat(Quaternion.scalar(Double.POSITIVE_INFINITY).abs()).isEqualTo(Double.POSITIVE_INFINITY);
+        assertThat(Quaternion.scalar(Double.POSITIVE_INFINITY).reciprocal()).isEqualTo(Quaternion.ZERO);
+        assertThat(Double.isNaN(Quaternion.scalar(Double.NaN).abs())).isTrue();
+    }
+
+    @Test
     public void testToStringFormatting() {
         assertThat(Quaternion.ZERO.toString()).isEqualTo("0.0");
         assertThat(Quaternion.ONE.toString()).isEqualTo("1.0");
