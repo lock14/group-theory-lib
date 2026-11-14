@@ -1,6 +1,7 @@
 package lock14.algebra.numbers;
 
 import java.util.Objects;
+import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.element.FieldElement;
 import lock14.algebra.structure.Field;
 
@@ -47,6 +48,17 @@ public record Complex(double real, double imaginary) implements FieldElement<Com
 
     public boolean isOne() {
         return real == 1.0 && imaginary == 0.0;
+    }
+
+    /**
+     * Checks whether this complex number is within {@link AlgebraicContext#currentEpsilon()} of {@code other}.
+     */
+    public boolean approxEquals(Complex other) {
+        Objects.requireNonNull(other, "other cannot be null");
+        if (this.equals(other)) {
+            return true;
+        }
+        return this.subtract(other).abs() <= AlgebraicContext.currentEpsilon();
     }
 
     public double normSq() {

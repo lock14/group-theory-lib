@@ -1,8 +1,9 @@
 package lock14.algebra.numbers;
 
 import java.util.Objects;
+import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.element.RingElement;
-import lock14.algebra.structure.Ring;
+import lock14.algebra.structure.DivisionRing;
 
 /**
  * An immutable Hamilton Quaternion (w + xi + yj + zk) over {@code double}.
@@ -35,8 +36,16 @@ public record Quaternion(double w, double x, double y, double z) implements Ring
         return new Quaternion(0.0, x, y, z);
     }
 
-    public static Ring<Quaternion> ring() {
+    public static DivisionRing<Quaternion> ring() {
         return QuaternionRing.INSTANCE;
+    }
+
+    public boolean approxEquals(Quaternion other) {
+        Objects.requireNonNull(other, "other quaternion cannot be null");
+        if (this.equals(other)) {
+            return true;
+        }
+        return this.subtract(other).abs() <= AlgebraicContext.currentEpsilon();
     }
 
     public boolean isZero() {

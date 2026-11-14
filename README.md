@@ -26,8 +26,8 @@ A modern, type-safe, high-performance abstract algebra and linear algebra librar
 | **$\mathbb{R}$ (Reals)** | `Double` (`RealField`) | `Field<Double>` | IEEE-754 double-precision real field arithmetic |
 | **$\mathbb{C}$ (Complex)** | `Complex` | `Field<Complex>` | Polar forms, Euler's identity, and Smith's scaling algorithm |
 | **$\mathbb{Z}/n\mathbb{Z}$ (Modular)** | `ModuloInteger` | `CommutativeRing` / `Field` | Ring $\mathbb{Z}/n\mathbb{Z}$, Galois field $\mathbb{F}_p$, ambient `ScopedValue` modulus |
-| **$\mathbb{H}$ (Quaternions)** | `Quaternion` | `Ring<Quaternion>` (`QuaternionRing`) | Hamilton 4D spatial rotations & non-commutative division algebra |
-| **$R[x]$ (Polynomials)** | `Polynomial<T>` | `CommutativeRing` / `Ring` | Horner's evaluation, symbolic derivatives (`PolynomialRing` & `GeneralPolynomialRing`) |
+| **$\mathbb{H}$ (Quaternions)** | `Quaternion` | `DivisionRing<Quaternion>` (`QuaternionRing`) | Hamilton 4D spatial rotations & non-commutative skew-field algebra |
+| **$R[x]$ / $F[x]$ (Polynomials)** | `Polynomial<T>` | `EuclideanDomain` / `CommutativeRing` / `Ring` | Euclidean long division & monic GCD (`PolynomialEuclideanDomain`), Horner's evaluation, derivatives |
 | **$S_n$ (Symmetric)** | `Permutation` | `Group<Permutation>` | Permutation composition, parity/sign homomorphism, immutable cycle notation |
 | **$F^n$ / $R^n$ (Vectors)** | `Vector<T>` | `VectorSpace` / `Module` | Coordinate spaces (`CoordinateVectorSpace`, `CoordinateModule`), dot & matrix-vector products |
 | **$M_{m\times n}(R)$ (Matrices)** | `Matrix<T>` | `Ring<SquareMatrix<T>>` | Sealed ADT (`DenseMatrix`, `SquareMatrix`), Bareiss/Bird/Gaussian determinants & inversion |

@@ -60,4 +60,11 @@ public final class ComplexField implements Field<Complex> {
     public boolean isOne(Complex element) {
         return element.isOne();
     }
+
+    /**
+     * Checks whether {@code a} and {@code b} are within {@link lock14.algebra.context.AlgebraicContext#currentEpsilon()}.
+     */
+    public boolean approxEquals(Complex a, Complex b) {
+        return a.approxEquals(b);
+    }
 }

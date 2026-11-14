@@ -4,17 +4,23 @@ import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
-import lock14.algebra.laws.RingLaws;
-import lock14.algebra.structure.Ring;
+import lock14.algebra.laws.DivisionRingLaws;
+import lock14.algebra.structure.DivisionRing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
-public class QuaternionTest extends RingLaws<Quaternion> {
+public class QuaternionTest extends DivisionRingLaws<Quaternion> {
 
     @Override
-    protected Ring<Quaternion> ring() {
+    protected DivisionRing<Quaternion> divisionRing() {
         return Quaternion.ring();
+    }
+
+    @Override
+    protected void assertDivisionEquals(Quaternion actual, Quaternion expected) {
+        double scale = Math.max(1.0, Math.max(actual.abs(), expected.abs()));
+        assertThat(actual.subtract(expected).abs() / scale).isLessThanOrEqualTo(1e-12);
     }
 
     @Provide
@@ -22,6 +28,11 @@ public class QuaternionTest extends RingLaws<Quaternion> {
         Arbitrary<Integer> coords = Arbitraries.integers().between(-10, 10);
         return coords.list().ofSize(4)
                 .map(c -> Quaternion.of(c.get(0), c.get(1), c.get(2), c.get(3)));
+    }
+
+    @Provide
+    Arbitrary<Quaternion> nonZeroElements() {
+        return elements().filter(q -> !q.isZero());
     }
 
     @Test

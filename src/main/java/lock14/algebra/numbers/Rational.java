@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.Objects;
+import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.element.FieldElement;
 import lock14.algebra.structure.Field;
 
@@ -73,6 +74,25 @@ public record Rational(BigInteger numerator, BigInteger denominator) implements 
 
     public Rational abs() {
         return signum() < 0 ? negate() : this;
+    }
+
+    /**
+     * Converts this rational number to a {@link BigDecimal} using the ambient
+     * {@link AlgebraicContext#currentMathContext()} (defaults to {@link MathContext#DECIMAL128}).
+     */
+    public BigDecimal bigDecimalValue() {
+        return bigDecimalValue(AlgebraicContext.currentMathContext());
+    }
+
+    /**
+     * Converts this rational number to a {@link BigDecimal} using the provided {@link MathContext}.
+     */
+    public BigDecimal bigDecimalValue(MathContext mathContext) {
+        Objects.requireNonNull(mathContext, "mathContext cannot be null");
+        if (isZero()) {
+            return BigDecimal.ZERO;
+        }
+        return new BigDecimal(numerator).divide(new BigDecimal(denominator), mathContext);
     }
 
     public double doubleValue() {

@@ -133,6 +133,26 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
     }
 
     @Test
+    public void testNonCommutativeQuaternionMatrixInverse() {
+        // Non-commuting entries (i*j = k != -k = j*i): right-multiplying pivot row would fail!
+        SquareMatrix<Quaternion> qm = SquareMatrix.of(2, Quaternion.ring(),
+                Quaternion.of(1, 1, 0, 0), Quaternion.J,
+                Quaternion.K, Quaternion.of(2, 0, 1, -1));
+
+        SquareMatrix<Quaternion> inv = qm.inverse();
+        SquareMatrix<Quaternion> rightProd = qm.multiply(inv);
+        SquareMatrix<Quaternion> leftProd = inv.multiply(qm);
+        SquareMatrix<Quaternion> id = SquareMatrix.identity(2, Quaternion.ring());
+
+        for (int r = 0; r < 2; r++) {
+            for (int c = 0; c < 2; c++) {
+                assertThat(rightProd.get(r, c).subtract(id.get(r, c)).abs()).isLessThan(1e-12);
+                assertThat(leftProd.get(r, c).subtract(id.get(r, c)).abs()).isLessThan(1e-12);
+            }
+        }
+    }
+
+    @Test
     public void testLargeCommutativeRingDeterminantRunsInPolynomialTime() {
         // 12x12 upper-bidiagonal + perturbation matrix over Z (would require 12! = 479,001,600 calls in Laplace)
         int n = 12;

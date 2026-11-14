@@ -1,6 +1,8 @@
 package lock14.algebra.linear;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.structure.AbelianGroup;
@@ -38,6 +40,14 @@ public record CoordinateModule<T>(int dimension, Ring<T> scalarRing) implements 
         Arrays.fill(arr, scalarRing.zero());
         arr[index] = scalarRing.one();
         return new Vector<>(dimension, arr, scalarRing);
+    }
+
+    public List<Vector<T>> standardBasis() {
+        List<Vector<T>> basis = new ArrayList<>(dimension);
+        for (int i = 0; i < dimension; i++) {
+            basis.add(unitBasis(i));
+        }
+        return List.copyOf(basis);
     }
 
     @Override

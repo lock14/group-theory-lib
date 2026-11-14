@@ -36,6 +36,11 @@ public class CoordinateModuleTest extends ModuleLaws<Vector<BigInteger>, BigInte
         assertThat(module.unitBasis(1)).isEqualTo(
                 module.of(BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO)
         );
+        assertThat(module.standardBasis()).containsExactly(
+                module.of(BigInteger.ONE, BigInteger.ZERO, BigInteger.ZERO),
+                module.of(BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO),
+                module.of(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ONE)
+        );
         assertThatThrownBy(() -> new CoordinateModule<>(0, BigIntRing.INSTANCE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
