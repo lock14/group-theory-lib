@@ -1,8 +1,10 @@
 package lock14.algebra.linear;
 
-import java.util.Objects;
-import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.exceptions.UndefinedOperationException;
+import lock14.algebra.numbers.Complex;
+import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.EuclideanDomain;
 import lock14.algebra.structure.Field;
 import lock14.algebra.structure.Ring;
 
@@ -77,6 +79,45 @@ final class MatrixOps {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
+    static <T> Object[] multiplyColumnVector(Ring<T> ring, Object[] matData, Object[] vecData, int rows, int cols) {
+        Object[] res = new Object[rows];
+        for (int r = 0; r < rows; r++) {
+            T sum = ring.zero();
+            int rowOffset = r * cols;
+            for (int c = 0; c < cols; c++) {
+                T aVal = (T) matData[rowOffset + c];
+                if (ring.isZero(aVal)) continue;
+                T vVal = (T) vecData[c];
+                if (ring.isZero(vVal)) continue;
+                sum = ring.add(sum, ring.multiply(aVal, vVal));
+            }
+            res[r] = sum;
+        }
+        return res;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Object[] multiplyRowVector(Ring<T> ring, Object[] vecData, Object[] matData, int rows, int cols) {
+        Object[] res = new Object[cols];
+        for (int i = 0; i < rows; i++) {
+            T vVal = (T) vecData[i];
+            if (ring.isZero(vVal)) continue;
+            int rowOffset = i * cols;
+            for (int j = 0; j < cols; j++) {
+                T mVal = (T) matData[rowOffset + j];
+                if (ring.isZero(mVal)) continue;
+                T prod = ring.multiply(vVal, mVal);
+                res[j] = res[j] == null ? prod : ring.add((T) res[j], prod);
+            }
+        }
+        T zero = ring.zero();
+        for (int j = 0; j < cols; j++) {
+            if (res[j] == null) res[j] = zero;
+        }
+        return res;
+    }
+
     static Object[] transpose(Object[] data, int rows, int cols) {
         Object[] res = new Object[rows * cols];
         for (int r = 0; r < rows; r++) {
@@ -88,23 +129,39 @@ final class MatrixOps {
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T trace(Ring<T> ring, Object[] data, int rows, int cols) {
-        if (rows != cols) {
-            throw new IllegalArgumentException("Trace is only defined for square matrices, but got " + rows + "x" + cols);
-        }
+    static <T> T trace(Ring<T> ring, Object[] data, int n) {
         T sum = ring.zero();
-        for (int i = 0; i < rows; i++) {
-            sum = ring.add(sum, (T) data[i * cols + i]);
+        for (int i = 0; i < n; i++) {
+            sum = ring.add(sum, (T) data[i * n + i]);
         }
         return sum;
     }
 
     @SuppressWarnings("unchecked")
     static <T> T determinant(Ring<T> ring, Object[] data, int n) {
-        if (!(ring instanceof Field<T> field)) {
-            return computeLaplaceDet(ring, data, n);
+        if (!(ring instanceof CommutativeRing<T> commRing)) {
+            throw new UndefinedOperationException("Determinant is not defined over non-commutative rings: " + ring);
         }
+        if (n == 1) {
+            return (T) data[0];
+        }
+        if (n == 2) {
+            return commRing.subtract(
+                commRing.multiply((T) data[0], (T) data[3]),
+                commRing.multiply((T) data[1], (T) data[2])
+            );
+        }
+        if (ring instanceof Field<T> field) {
+            return determinantOverField(field, data, n);
+        }
+        if (ring instanceof EuclideanDomain<T> domain) {
+            return determinantBareiss(domain, data, n);
+        }
+        return determinantBird(commRing, data, n);
+    }
 
+    @SuppressWarnings("unchecked")
+    private static <T> T determinantOverField(Field<T> field, Object[] data, int n) {
         Object[][] a = new Object[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
@@ -116,13 +173,7 @@ final class MatrixOps {
         int sign = 1;
 
         for (int i = 0; i < n; i++) {
-            int pivot = -1;
-            for (int r = i; r < n; r++) {
-                if (!field.isZero((T) a[r][i])) {
-                    pivot = r;
-                    break;
-                }
-            }
+            int pivot = selectPivotRow(field, a, i, i, n);
             if (pivot == -1) {
                 return field.zero();
             }
@@ -149,38 +200,114 @@ final class MatrixOps {
         return sign < 0 ? field.negate(det) : det;
     }
 
+    /**
+     * Bareiss fraction-free Gaussian elimination in O(n^3) exact divisions over any EuclideanDomain.
+     */
     @SuppressWarnings("unchecked")
-    private static <T> T computeLaplaceDet(Ring<T> ring, Object[] data, int n) {
-        if (n == 1) return (T) data[0];
-        if (n == 2) {
-            return ring.subtract(
-                ring.multiply((T) data[0], (T) data[3]),
-                ring.multiply((T) data[1], (T) data[2])
-            );
-        }
-        T det = ring.zero();
-        for (int j = 0; j < n; j++) {
-            T elem = (T) data[j];
-            if (ring.isZero(elem)) continue;
-            Object[] minorData = minor(data, n, 0, j);
-            T subDet = determinant(ring, minorData, n - 1);
-            T term = ring.multiply(elem, subDet);
-            det = (j % 2 == 0) ? ring.add(det, term) : ring.subtract(det, term);
-        }
-        return det;
-    }
-
-    private static Object[] minor(Object[] data, int n, int rowToRemove, int colToRemove) {
-        Object[] minorData = new Object[(n - 1) * (n - 1)];
-        int idx = 0;
+    private static <T> T determinantBareiss(EuclideanDomain<T> domain, Object[] data, int n) {
+        Object[][] m = new Object[n][n];
         for (int i = 0; i < n; i++) {
-            if (i == rowToRemove) continue;
             for (int j = 0; j < n; j++) {
-                if (j == colToRemove) continue;
-                minorData[idx++] = data[i * n + j];
+                m[i][j] = data[i * n + j];
             }
         }
-        return minorData;
+
+        int sign = 1;
+        T prevPivot = domain.one();
+
+        for (int k = 0; k < n - 1; k++) {
+            if (domain.isZero((T) m[k][k])) {
+                int swapRow = -1;
+                for (int r = k + 1; r < n; r++) {
+                    if (!domain.isZero((T) m[r][k])) {
+                        swapRow = r;
+                        break;
+                    }
+                }
+                if (swapRow == -1) {
+                    return domain.zero();
+                }
+                Object[] temp = m[k];
+                m[k] = m[swapRow];
+                m[swapRow] = temp;
+                sign = -sign;
+            }
+
+            T pivot = (T) m[k][k];
+            for (int i = k + 1; i < n; i++) {
+                for (int j = k + 1; j < n; j++) {
+                    T num = domain.subtract(
+                        domain.multiply(pivot, (T) m[i][j]),
+                        domain.multiply((T) m[i][k], (T) m[k][j])
+                    );
+                    m[i][j] = domain.divide(num, prevPivot);
+                }
+            }
+            prevPivot = pivot;
+        }
+
+        T det = (T) m[n - 1][n - 1];
+        return sign < 0 ? domain.negate(det) : det;
+    }
+
+    /**
+     * Richard Bird's (2011) division-free O(n^4) determinant algorithm over any CommutativeRing
+     * (including rings with zero divisors or non-zero characteristic, using only +, -, *).
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T determinantBird(CommutativeRing<T> ring, Object[] data, int n) {
+        Object[][] a = new Object[n][n];
+        Object[][] x = new Object[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                Object val = data[i * n + j];
+                a[i][j] = val;
+                x[i][j] = val;
+            }
+        }
+
+        for (int step = 1; step < n; step++) {
+            Object[][] mu = new Object[n][n];
+            T diagSuffixSum = ring.zero();
+            for (int i = n - 1; i >= 0; i--) {
+                mu[i][i] = ring.negate(diagSuffixSum);
+                diagSuffixSum = ring.add(diagSuffixSum, (T) x[i][i]);
+                for (int j = i + 1; j < n; j++) {
+                    mu[i][j] = x[i][j];
+                }
+            }
+
+            if (step == n - 1) {
+                T finalEntry = ring.zero();
+                for (int k = 0; k < n; k++) {
+                    T muVal = (T) mu[0][k];
+                    if (ring.isZero(muVal)) continue;
+                    T aVal = (T) a[k][0];
+                    if (ring.isZero(aVal)) continue;
+                    finalEntry = ring.add(finalEntry, ring.multiply(muVal, aVal));
+                }
+                return (n % 2 == 1) ? finalEntry : ring.negate(finalEntry);
+            }
+
+            Object[][] nextX = new Object[n][n];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    T sum = ring.zero();
+                    for (int k = i; k < n; k++) {
+                        T muVal = (T) mu[i][k];
+                        if (ring.isZero(muVal)) continue;
+                        T aVal = (T) a[k][j];
+                        if (ring.isZero(aVal)) continue;
+                        sum = ring.add(sum, ring.multiply(muVal, aVal));
+                    }
+                    nextX[i][j] = sum;
+                }
+            }
+            x = nextX;
+        }
+
+        T val = (T) x[0][0];
+        return (n % 2 == 1) ? val : ring.negate(val);
     }
 
     @SuppressWarnings("unchecked")
@@ -197,13 +324,7 @@ final class MatrixOps {
         }
 
         for (int i = 0; i < n; i++) {
-            int pivot = -1;
-            for (int r = i; r < n; r++) {
-                if (!field.isZero((T) aug[r][i])) {
-                    pivot = r;
-                    break;
-                }
-            }
+            int pivot = selectPivotRow(field, aug, i, i, n);
             if (pivot == -1) {
                 throw new NonInvertibleElementException("Matrix is singular (determinant is zero)");
             }
@@ -236,5 +357,42 @@ final class MatrixOps {
             }
         }
         return invData;
+    }
+
+    /**
+     * Selects a non-zero pivot row in {@code col} starting at {@code startRow}.
+     * Uses partial pivoting (maximizing magnitude) for floating-point / normed fields
+     * (such as {@code RealField} and {@code ComplexField}) to preserve numerical stability.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> int selectPivotRow(Field<T> field, Object[][] mat, int col, int startRow, int n) {
+        int bestRow = -1;
+        double bestMagnitude = -1.0;
+
+        for (int r = startRow; r < n; r++) {
+            T candidate = (T) mat[r][col];
+            if (field.isZero(candidate)) {
+                continue;
+            }
+            double mag = pivotMagnitude(candidate);
+            if (Double.isNaN(mag)) {
+                // Non-numeric / exact symbolic field: first non-zero pivot is exact
+                return r;
+            }
+            if (bestRow == -1 || mag > bestMagnitude) {
+                bestRow = r;
+                bestMagnitude = mag;
+            }
+        }
+        return bestRow;
+    }
+
+    private static double pivotMagnitude(Object element) {
+        return switch (element) {
+            case Double d -> Math.abs(d);
+            case Float f -> Math.abs(f);
+            case Complex c -> c.abs();
+            default -> Double.NaN;
+        };
     }
 }

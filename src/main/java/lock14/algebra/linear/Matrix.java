@@ -32,6 +32,11 @@ public sealed interface Matrix<T> permits DenseMatrix, SquareMatrix {
     T get(int r, int c);
 
     /**
+     * Returns a copy of this matrix with the entry at {@code (r, c)} updated to {@code val}.
+     */
+    Matrix<T> with(int r, int c, T val);
+
+    /**
      * @return true if the matrix is square (rows == cols)
      */
     default boolean isSquare() {
@@ -54,9 +59,14 @@ public sealed interface Matrix<T> permits DenseMatrix, SquareMatrix {
     Stream<List<T>> streamRows();
 
     /**
-     * Computes the trace (sum of main diagonal elements) of this matrix.
+     * Multiplies this matrix with another compatible matrix ({@code this.cols() == other.rows()}).
      */
-    T trace();
+    Matrix<T> multiply(Matrix<T> other);
+
+    /**
+     * Computes the matrix-vector product {@code this * vector}.
+     */
+    Vector<T> multiply(Vector<T> vector);
 
     /**
      * Transposes this matrix, swapping rows and columns.
