@@ -156,6 +156,10 @@
         <configuration>
           <release>${maven.compiler.release}</release>
           <failOnWarnings>true</failOnWarnings>
+          <additionalOptions>
+            <additionalOption>--snippet-path</additionalOption>
+            <additionalOption>${project.basedir}/src/test/java</additionalOption>
+          </additionalOptions>
         </configuration>
       </plugin>
       <plugin>

@@ -9,5 +9,8 @@
  * ({@link lock14.algebra.linear.MatrixRing}), partial-pivoted LU factorization
  * ({@link lock14.algebra.linear.LuDecomposition}), and Reduced Row Echelon Form elimination
  * ({@link lock14.algebra.linear.RrefResult}).</p>
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.linear.LinearExamplesTest" region="lu-solve-and-kernel"}
  */
 package lock14.algebra.linear;

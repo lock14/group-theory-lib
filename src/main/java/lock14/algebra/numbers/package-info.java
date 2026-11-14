@@ -9,5 +9,8 @@
  * {@link lock14.algebra.numbers.ComplexField}) and non-commutative Hamilton quaternion algebras
  * ({@link lock14.algebra.numbers.Quaternion}, {@link lock14.algebra.numbers.QuaternionRing},
  * {@link lock14.algebra.numbers.QuaternionDivisionRing}).</p>
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.numbers.NumbersExamplesTest" region="gaussian-and-quaternions"}
  */
 package lock14.algebra.numbers;

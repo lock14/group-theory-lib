@@ -7,5 +7,8 @@
  * {@link lock14.algebra.polynomial.NonCommutativePolynomialRing} over a general
  * {@link lock14.algebra.structure.Ring}, and {@link lock14.algebra.polynomial.PolynomialEuclideanDomain}
  * over a {@link lock14.algebra.structure.Field} supporting polynomial long division and monic GCDs.
+ *
+ * <h2>Example</h2>
+ * {@snippet class="lock14.algebra.polynomial.PolynomialExamplesTest" region="polynomial-euclidean"}
  */
 package lock14.algebra.polynomial;
