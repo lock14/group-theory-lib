@@ -71,6 +71,17 @@ public class ComplexTest extends ApproximateFieldLaws<Complex> {
     }
 
     @Test
+    public void testZeroBasePowEdgeCases() {
+        assertThat(Complex.ZERO.pow(Complex.ZERO)).isEqualTo(Complex.ONE);
+        assertThat(Complex.ZERO.pow(Complex.of(2.0, 3.0))).isEqualTo(Complex.ZERO);
+
+        assertThatThrownBy(() -> Complex.ZERO.pow(Complex.of(-2.0, 0.0)))
+            .isInstanceOf(ArithmeticException.class);
+        assertThatThrownBy(() -> Complex.ZERO.pow(Complex.I))
+            .isInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
     public void testSmithDivisionExtremeScale() {
         // High magnitude numbers that would overflow c^2 + d^2 in naive division
         Complex a = Complex.of(1e150, 2e150);

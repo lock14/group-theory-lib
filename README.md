@@ -13,21 +13,24 @@ A modern, type-safe, high-performance abstract algebra and linear algebra librar
 * **Dual-Layer Architecture:** Pure functional typeclasses in `lock14.algebra.structure` decoupled from ergonomic fluent elements in `lock14.algebra.element` (`a.add(b).multiply(c)`).
 * **Algebraic Data Types & Valhalla Ready:** Sealed interfaces (`Matrix<T>`) and immutable value records with exhaustive pattern matching and zero-identity semantics.
 * **Modern Java 25 Idioms:** Stream Gatherers (prefix scans & windowing), Scoped Values for ambient contexts, and Foreign Function & Memory (FFM) off-heap allocations.
-* **Axiomatically Verified:** 110 property-based and unit test suites running 100,000+ randomized trials with `jqwik`.
+* **Axiomatically Verified:** 171 property-based and unit test suites running 100,000+ randomized trials with `jqwik`.
 
 ---
 
 ## 📦 Concrete Algebraic Domains
 
-| Domain | Record Type | Algebraic Structure | Key Capabilities |
+| Domain | Carrier / Record Type | Algebraic Structure | Key Capabilities |
 | :--- | :--- | :--- | :--- |
+| **$\mathbb{Z}$ (Integers)** | `BigInteger` (`BigIntRing`) | `EuclideanDomain<BigInteger>` | Arbitrary-precision Euclidean division, extended Bézout GCD & canonical LCM |
 | **$\mathbb{Q}$ (Rationals)** | `Rational` | `Field<Rational>` | Exact fraction arithmetic with automatic GCD reduction & sign normalization |
+| **$\mathbb{R}$ (Reals)** | `Double` (`RealField`) | `Field<Double>` | IEEE-754 double-precision real field arithmetic |
 | **$\mathbb{C}$ (Complex)** | `Complex` | `Field<Complex>` | Polar forms, Euler's identity, and Smith's scaling algorithm |
 | **$\mathbb{Z}/n\mathbb{Z}$ (Modular)** | `ModuloInteger` | `CommutativeRing` / `Field` | Ring $\mathbb{Z}/n\mathbb{Z}$, Galois field $\mathbb{F}_p$, ambient `ScopedValue` modulus |
-| **$\mathbb{H}$ (Quaternions)** | `Quaternion` | Division Ring | Hamilton 4D spatial rotations & non-commutative algebra |
-| **$R[x]$ (Polynomials)** | `Polynomial<T>` | `CommutativeRing` | Horner's evaluation, symbolic derivatives over arbitrary rings |
-| **$S_n$ (Symmetric)** | `Permutation` | `Group<Permutation>` | Permutation composition, parity/sign homomorphism, cycle notation |
-| **$M_{m\times n}(R)$ (Matrices)** | `Matrix<T>` | `Ring<SquareMatrix<T>>` | Sealed ADT (`DenseMatrix`, `SquareMatrix`), Gaussian elimination, inversion |
+| **$\mathbb{H}$ (Quaternions)** | `Quaternion` | `Ring<Quaternion>` (`QuaternionRing`) | Hamilton 4D spatial rotations & non-commutative division algebra |
+| **$R[x]$ (Polynomials)** | `Polynomial<T>` | `CommutativeRing` / `Ring` | Horner's evaluation, symbolic derivatives (`PolynomialRing` & `GeneralPolynomialRing`) |
+| **$S_n$ (Symmetric)** | `Permutation` | `Group<Permutation>` | Permutation composition, parity/sign homomorphism, immutable cycle notation |
+| **$F^n$ / $R^n$ (Vectors)** | `Vector<T>` | `VectorSpace` / `Module` | Coordinate spaces (`CoordinateVectorSpace`, `CoordinateModule`), dot & matrix-vector products |
+| **$M_{m\times n}(R)$ (Matrices)** | `Matrix<T>` | `Ring<SquareMatrix<T>>` | Sealed ADT (`DenseMatrix`, `SquareMatrix`), Bareiss/Bird/Gaussian determinants & inversion |
 
 ---
 

@@ -3,9 +3,10 @@ package lock14.algebra.linear;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import lock14.algebra.numbers.Rational;
-import net.jqwik.api.Example;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +41,69 @@ class MatrixADTTest {
         } else {
             throw new AssertionError("Failed to match SquareMatrix record pattern");
         }
+    }
+
+    @Test
+    @DisplayName("SquareMatrix.with and Matrix.with immutable entry updates")
+    void testSquareMatrixWith() {
+        SquareMatrix<Rational> id = SquareMatrix.identity(2, Rational.field());
+        SquareMatrix<Rational> updated = id.with(0, 1, Rational.of(5));
+
+        assertThat(id.get(0, 1)).isEqualTo(Rational.ZERO);
+        assertThat(updated.get(0, 1)).isEqualTo(Rational.of(5));
+        assertThat(updated.determinant()).isEqualTo(Rational.ONE);
+
+        Matrix<Rational> polyRef = id;
+        Matrix<Rational> polyUpdated = polyRef.with(1, 0, Rational.of(-3));
+        assertThat(polyUpdated).isInstanceOf(SquareMatrix.class);
+        assertThat(polyUpdated.get(1, 0)).isEqualTo(Rational.of(-3));
+    }
+
+    @Test
+    @DisplayName("Cross-ADT Matrix multiplication and Matrix-Vector multiplication")
+    void testCrossAdtMultiplication() {
+        SquareMatrix<Rational> sq = SquareMatrix.of(2, Rational.field(),
+                Rational.of(2), Rational.of(1),
+                Rational.of(0), Rational.of(3));
+        DenseMatrix<Rational> rect = DenseMatrix.of(2, 3, Rational.field(),
+                Rational.of(1), Rational.of(2), Rational.of(3),
+                Rational.of(4), Rational.of(5), Rational.of(6));
+
+        // SquareMatrix (2x2) * DenseMatrix (2x3) -> DenseMatrix (2x3)
+        DenseMatrix<Rational> prod1 = sq.multiply(rect);
+        assertThat(prod1).isEqualTo(DenseMatrix.of(2, 3, Rational.field(),
+                Rational.of(6), Rational.of(9), Rational.of(12),
+                Rational.of(12), Rational.of(15), Rational.of(18)));
+
+        // Polymorphic Matrix * Matrix
+        Matrix<Rational> mSq = sq;
+        Matrix<Rational> mRect = rect;
+        assertThat(mSq.multiply(mRect)).isEqualTo(prod1);
+        assertThat(mSq.multiply(mSq)).isInstanceOf(SquareMatrix.class);
+
+        // DenseMatrix (3x2) * SquareMatrix (2x2) -> DenseMatrix (3x2)
+        DenseMatrix<Rational> rectT = rect.transpose();
+        DenseMatrix<Rational> prod2 = rectT.multiply(sq);
+        assertThat(prod2).isEqualTo(DenseMatrix.of(3, 2, Rational.field(),
+                Rational.of(2), Rational.of(13),
+                Rational.of(4), Rational.of(17),
+                Rational.of(6), Rational.of(21)));
+
+        // SquareMatrix * Vector
+        Vector<Rational> v = Vector.of(Rational.field(), Rational.of(5), Rational.of(2));
+        assertThat(mSq.multiply(v)).isEqualTo(Vector.of(Rational.field(), Rational.of(12), Rational.of(6)));
+    }
+
+    @Test
+    @DisplayName("trace() is exclusively defined on SquareMatrix, not general Matrix")
+    void testTraceExclusiveToSquareMatrix() {
+        boolean matrixHasTrace = Arrays.stream(Matrix.class.getDeclaredMethods())
+                .map(Method::getName)
+                .anyMatch("trace"::equals);
+        assertThat(matrixHasTrace).isFalse();
+
+        SquareMatrix<Rational> sq = SquareMatrix.identity(3, Rational.field());
+        assertThat(sq.trace()).isEqualTo(Rational.of(3));
     }
 
     @Test

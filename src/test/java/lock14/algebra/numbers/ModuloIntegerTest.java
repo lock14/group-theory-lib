@@ -54,12 +54,28 @@ public class ModuloIntegerTest {
 
     @Test
     public void testScopedValueAmbientModulus() {
+        assertThatThrownBy(AlgebraicContext::currentModulus)
+                .isInstanceOf(IllegalStateException.class);
+
         ScopedValue.where(AlgebraicContext.MODULUS, BigInteger.valueOf(17)).run(() -> {
+            assertThat(AlgebraicContext.currentModulus()).isEqualTo(BigInteger.valueOf(17));
             ModuloInteger a = ModuloInteger.of(12);
-            ModuloInteger b = ModuloInteger.of(10);
+            ModuloInteger b = ModuloInteger.of(BigInteger.TEN);
             ModuloInteger sum = a.add(b); // (12 + 10) % 17 = 5
             assertThat(sum.value()).isEqualTo(BigInteger.valueOf(5));
         });
+    }
+
+    @Test
+    public void testPowerLongMinValueDoesNotOverflowOrRecurseInfinitely() {
+        // 2^-1 mod 7 = 4; 2^63 mod 6 = 2, so 4^(2^63) mod 7 = 4^2 mod 7 = 2
+        ModuloInteger m = ModuloInteger.of(2, 7);
+        ModuloInteger result = m.power(Long.MIN_VALUE);
+        assertThat(result).isEqualTo(ModuloInteger.of(2, 7));
+
+        // Verify group identity: m^(Long.MIN_VALUE) * m^(-(Long.MIN_VALUE + 1)) * m = 1
+        ModuloInteger product = result.multiply(m.power(-(Long.MIN_VALUE + 1))).multiply(m);
+        assertThat(product).isEqualTo(ModuloInteger.one(7));
     }
 
     @Test

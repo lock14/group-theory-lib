@@ -53,6 +53,19 @@ public class PermutationTest extends GroupLaws<Permutation> {
         Permutation c3 = Permutation.of(1, 2, 0, 3);
         assertThat(c3.sign()).isEqualTo(1);
         assertThat(c3.isEven()).isTrue();
+        assertThat(c3.remove(t)).isEqualTo(c3.combine(t.inverse()));
+    }
+
+    @Test
+    public void testCyclesReturnsUnmodifiableNestedLists() {
+        Permutation p = Permutation.of(1, 0, 3, 2);
+        List<List<Integer>> cycles = p.cycles();
+        assertThat(cycles).hasSize(2);
+
+        assertThatThrownBy(() -> cycles.add(List.of(0, 1)))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> cycles.getFirst().add(999))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
