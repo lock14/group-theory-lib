@@ -1,6 +1,5 @@
 package lock14.algebra.numbers;
 
-import java.util.Objects;
 import lock14.algebra.structure.Field;
 
 /**

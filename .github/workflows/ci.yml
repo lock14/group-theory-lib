@@ -10,8 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 # Cancel redundant in-flight workflow runs on pull requests
 concurrency:
@@ -58,6 +57,9 @@ jobs:
     needs:
       - build-and-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Evaluate CI matrix status
         run: |

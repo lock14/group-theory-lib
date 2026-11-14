@@ -1,7 +1,6 @@
 package lock14.algebra.structure;
 
 import java.util.Objects;
-import lock14.algebra.exceptions.UndefinedOperationException;
 
 /**
  * A Euclidean Domain is an {@link IntegralDomain} endowed with a Euclidean function / division with remainder.

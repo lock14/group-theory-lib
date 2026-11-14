@@ -13,7 +13,7 @@ A modern, type-safe, high-performance abstract algebra and linear algebra librar
 * **Dual-Layer Architecture:** Pure functional typeclasses in `lock14.algebra.structure` decoupled from ergonomic fluent elements in `lock14.algebra.element` (`a.add(b).multiply(c)`).
 * **Algebraic Data Types & Valhalla Ready:** Sealed interfaces (`Matrix<T>`) and immutable value records with exhaustive pattern matching and zero-identity semantics.
 * **Modern Java 25 Idioms:** Stream Gatherers (prefix scans & windowing), Scoped Values for ambient contexts, and Foreign Function & Memory (FFM) off-heap allocations.
-* **Axiomatically Verified:** 171 property-based and unit test suites running 100,000+ randomized trials with `jqwik`.
+* **Axiomatically Verified:** 240+ property-based and unit tests running 100,000+ randomized trials with `jqwik`.
 
 ---
 
@@ -97,4 +97,4 @@ Requires **OpenJDK 25 LTS** or higher:
 # Run the complete property-based & unit test suite
 ./mvnw clean test
 ```
-All tests execute under JUnit 5 Jupiter and jqwik with `--enable-preview` on JDK 25 LTS.
+All tests execute under JUnit 5 Jupiter and jqwik on JDK 25 LTS.
