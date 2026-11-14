@@ -30,6 +30,16 @@ public abstract class FieldLaws<T> extends EuclideanDomainLaws<T> {
         assertThat(f.divide(a, b)).isEqualTo(f.multiply(a, f.reciprocal(b)));
     }
 
+    @Property
+    public void fieldGcdAndNormalizeAreCanonical(@ForAll("elements") T a, @ForAll("nonZeroElements") T b) {
+        Field<T> f = field();
+        assertThat(f.normalize(f.zero())).isEqualTo(f.zero());
+        assertThat(f.normalize(b)).isEqualTo(f.one());
+        assertThat(f.gcd(a, b)).isEqualTo(f.one());
+        assertThat(f.gcd(b, a)).isEqualTo(f.one());
+        assertThat(f.gcd(f.zero(), f.zero())).isEqualTo(f.zero());
+    }
+
     @Test
     public void zeroReciprocalThrows() {
         Field<T> f = field();

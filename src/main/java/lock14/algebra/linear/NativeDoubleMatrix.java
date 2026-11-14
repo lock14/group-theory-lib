@@ -25,21 +25,44 @@ public final class NativeDoubleMatrix implements AutoCloseable {
         this(rows, cols, arena, false);
     }
 
-    private NativeDoubleMatrix(int rows, int cols, Arena arena, boolean ownsArena) {
+    NativeDoubleMatrix(int rows, int cols, Arena arena, boolean ownsArena) {
+        Objects.requireNonNull(arena, "arena cannot be null");
+        try {
+            long elementCount = checkedElementCount(rows, cols);
+            this.rows = rows;
+            this.cols = cols;
+            this.arena = arena;
+            this.ownsArena = ownsArena;
+            this.segment = arena.allocate(ValueLayout.JAVA_DOUBLE, elementCount);
+        } catch (Throwable t) {
+            if (ownsArena && arena.scope().isAlive()) {
+                try {
+                    arena.close();
+                } catch (Throwable suppressed) {
+                    t.addSuppressed(suppressed);
+                }
+            }
+            throw t;
+        }
+    }
+
+    private static long checkedElementCount(int rows, int cols) {
         if (rows <= 0 || cols <= 0) {
             throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
         }
-        this.rows = rows;
-        this.cols = cols;
-        this.arena = Objects.requireNonNull(arena, "arena cannot be null");
-        this.ownsArena = ownsArena;
-        this.segment = arena.allocate(ValueLayout.JAVA_DOUBLE, (long) rows * cols);
+        long count = (long) rows * cols;
+        try {
+            Math.multiplyExact(count, ValueLayout.JAVA_DOUBLE.byteSize());
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException(
+                "Matrix byte size overflows long: " + rows + "x" + cols, e
+            );
+        }
+        return count;
     }
 
     private static Arena createConfinedArena(int rows, int cols) {
-        if (rows <= 0 || cols <= 0) {
-            throw new IllegalArgumentException("Dimensions must be positive: " + rows + "x" + cols);
-        }
+        checkedElementCount(rows, cols);
         return Arena.ofConfined();
     }
 

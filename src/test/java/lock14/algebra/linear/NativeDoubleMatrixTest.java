@@ -1,10 +1,12 @@
 package lock14.algebra.linear;
 
 import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import org.junit.jupiter.api.Test;
 import lock14.algebra.numbers.Rational;
 import lock14.algebra.numbers.RationalField;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class NativeDoubleMatrixTest {
 
@@ -89,5 +91,44 @@ public class NativeDoubleMatrixTest {
 
         Vector<Rational> scaled = v1.scale(Rational.of(3));
         assertThat(scaled).isEqualTo(Vector.of(f, Rational.of(3), Rational.of(6), Rational.of(9)));
+    }
+
+    @Test
+    public void testOverflowDimensionsAndAllocationFailureCloseOwnedArena() {
+        assertThatThrownBy(() -> new NativeDoubleMatrix(0, 4))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new NativeDoubleMatrix(4, -1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new NativeDoubleMatrix(Integer.MAX_VALUE, Integer.MAX_VALUE))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        // When ownsArena is true, an allocation failure must close the owned arena
+        Arena backingOwned = Arena.ofConfined();
+        Arena failingOwnedArena = new Arena() {
+            @Override
+            public MemorySegment allocate(long byteSize, long byteAlignment) {
+                throw new OutOfMemoryError("Simulated off-heap OOM");
+            }
+
+            @Override
+            public MemorySegment.Scope scope() {
+                return backingOwned.scope();
+            }
+
+            @Override
+            public void close() {
+                backingOwned.close();
+            }
+        };
+        assertThatThrownBy(() -> new NativeDoubleMatrix(2, 2, failingOwnedArena, true))
+                .isInstanceOf(OutOfMemoryError.class);
+        assertThat(backingOwned.scope().isAlive()).isFalse();
+
+        // When ownsArena is false, caller-supplied arena must remain open on failure
+        try (Arena borrowed = Arena.ofConfined()) {
+            assertThatThrownBy(() -> new NativeDoubleMatrix(Integer.MAX_VALUE, Integer.MAX_VALUE, borrowed))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(borrowed.scope().isAlive()).isTrue();
+        }
     }
 }

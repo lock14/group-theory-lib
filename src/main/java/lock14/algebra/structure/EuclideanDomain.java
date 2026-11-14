@@ -80,9 +80,12 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
     }
 
     /**
-     * Computes Bézout coefficients (x, y) such that {@code a*x + b*y = gcd(a, b)}.
+     * Computes Bézout coefficients (x, y) such that {@code a*x + b*y = gcd(a, b)},
+     * where {@code gcd(a, b)} is normalized via {@link #normalize(Object)}.
      */
     default ExtendedGcdResult<T> extendedGcd(T a, T b) {
+        Objects.requireNonNull(a, "a cannot be null");
+        Objects.requireNonNull(b, "b cannot be null");
         T oldR = a, r = b;
         T oldS = one(), s = zero();
         T oldT = zero(), t = one();
@@ -101,6 +104,16 @@ public interface EuclideanDomain<T> extends IntegralDomain<T> {
             T tempT = t;
             t = subtract(oldT, multiply(q, t));
             oldT = tempT;
+        }
+        if (isZero(oldR)) {
+            return new ExtendedGcdResult<>(zero(), zero(), zero());
+        }
+        T normR = normalize(oldR);
+        if (!Objects.equals(oldR, normR)) {
+            T unit = divide(normR, oldR);
+            oldR = normR;
+            oldS = multiply(unit, oldS);
+            oldT = multiply(unit, oldT);
         }
         return new ExtendedGcdResult<>(oldR, oldS, oldT);
     }

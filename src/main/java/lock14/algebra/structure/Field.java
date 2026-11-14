@@ -1,5 +1,6 @@
 package lock14.algebra.structure;
 
+import java.util.Objects;
 import lock14.algebra.exceptions.NonInvertibleElementException;
 
 /**
@@ -40,6 +41,15 @@ public interface Field<T> extends EuclideanDomain<T> {
     @Override
     default boolean isUnit(T element) {
         return !isZero(element);
+    }
+
+    /**
+     * Normalizes a field element to its canonical associate: {@code zero()} for zero and {@code one()} for any unit.
+     */
+    @Override
+    default T normalize(T element) {
+        Objects.requireNonNull(element, "element cannot be null");
+        return isZero(element) ? zero() : one();
     }
 
     /**
