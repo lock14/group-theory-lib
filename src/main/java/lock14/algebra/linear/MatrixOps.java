@@ -1,10 +1,13 @@
 package lock14.algebra.linear;
 
 import java.util.Objects;
+import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.exceptions.NonInvertibleElementException;
 import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.numbers.Complex;
+import lock14.algebra.numbers.Quaternion;
 import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.DivisionRing;
 import lock14.algebra.structure.EuclideanDomain;
 import lock14.algebra.structure.Field;
 import lock14.algebra.structure.Ring;
@@ -333,21 +336,21 @@ final class MatrixOps {
 
     @SuppressWarnings("unchecked")
     static <T> Object[] inverse(Ring<T> ring, Object[] data, int n) {
-        if (!(ring instanceof Field<T> field)) {
-            throw new UnsupportedOperationException("Matrix inversion currently requires a Field");
+        if (!(ring instanceof DivisionRing<T> divRing)) {
+            throw new UnsupportedOperationException("Matrix inversion requires a DivisionRing: " + ring);
         }
         Object[][] aug = new Object[n][2 * n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 aug[i][j] = data[i * n + j];
-                aug[i][j + n] = (i == j) ? field.one() : field.zero();
+                aug[i][j + n] = (i == j) ? divRing.one() : divRing.zero();
             }
         }
 
         for (int i = 0; i < n; i++) {
-            int pivot = selectPivotRow(field, aug, i, i, n);
+            int pivot = selectPivotRow(divRing, aug, i, i, n);
             if (pivot == -1) {
-                throw new NonInvertibleElementException("Matrix is singular (determinant is zero)");
+                throw new NonInvertibleElementException("Matrix is singular");
             }
             if (pivot != i) {
                 Object[] temp = aug[i];
@@ -356,16 +359,17 @@ final class MatrixOps {
             }
 
             T pivotVal = (T) aug[i][i];
-            T invPivot = field.reciprocal(pivotVal);
+            T invPivot = divRing.reciprocal(pivotVal);
+            // Left-multiply row i by invPivot so non-commutative division rings preserve E * [A | I]
             for (int c = 0; c < 2 * n; c++) {
-                aug[i][c] = field.multiply((T) aug[i][c], invPivot);
+                aug[i][c] = divRing.multiply(invPivot, (T) aug[i][c]);
             }
 
             for (int r = 0; r < n; r++) {
-                if (r != i && !field.isZero((T) aug[r][i])) {
+                if (r != i && !divRing.isZero((T) aug[r][i])) {
                     T factor = (T) aug[r][i];
                     for (int c = 0; c < 2 * n; c++) {
-                        aug[r][c] = field.subtract((T) aug[r][c], field.multiply(factor, (T) aug[i][c]));
+                        aug[r][c] = divRing.subtract((T) aug[r][c], divRing.multiply(factor, (T) aug[i][c]));
                     }
                 }
             }
@@ -382,23 +386,29 @@ final class MatrixOps {
 
     /**
      * Selects a non-zero pivot row in {@code col} starting at {@code startRow}.
-     * Uses partial pivoting (maximizing magnitude) for floating-point / normed fields
-     * (such as {@code RealField} and {@code ComplexField}) to preserve numerical stability.
+     * Uses partial pivoting (maximizing magnitude) for floating-point / normed division rings
+     * (such as {@code RealField}, {@code ComplexField}, and {@code QuaternionRing}) to preserve
+     * numerical stability, and treats candidate pivots {@code <= AlgebraicContext.currentEpsilon()}
+     * as numerically zero when {@link AlgebraicContext#EPSILON} is bound.
      */
     @SuppressWarnings("unchecked")
-    private static <T> int selectPivotRow(Field<T> field, Object[][] mat, int col, int startRow, int n) {
+    private static <T> int selectPivotRow(Ring<T> ring, Object[][] mat, int col, int startRow, int n) {
         int bestRow = -1;
         double bestMagnitude = -1.0;
+        double minPivot = AlgebraicContext.EPSILON.isBound() ? AlgebraicContext.currentEpsilon() : 0.0;
 
         for (int r = startRow; r < n; r++) {
             T candidate = (T) mat[r][col];
-            if (field.isZero(candidate)) {
+            if (ring.isZero(candidate)) {
                 continue;
             }
             double mag = pivotMagnitude(candidate);
             if (Double.isNaN(mag)) {
-                // Non-numeric / exact symbolic field: first non-zero pivot is exact
+                // Non-numeric / exact symbolic ring: first non-zero pivot is exact
                 return r;
+            }
+            if (mag <= minPivot) {
+                continue;
             }
             if (bestRow == -1 || mag > bestMagnitude) {
                 bestRow = r;
@@ -413,6 +423,7 @@ final class MatrixOps {
             case Double d -> Math.abs(d);
             case Float f -> Math.abs(f);
             case Complex c -> c.abs();
+            case Quaternion q -> q.abs();
             default -> Double.NaN;
         };
     }

@@ -1,11 +1,11 @@
 package lock14.algebra.numbers;
 
-import lock14.algebra.structure.Ring;
+import lock14.algebra.structure.DivisionRing;
 
 /**
  * The Non-Commutative Division Ring (Skew-Field) of Hamilton Quaternions (H, +, *).
  */
-public final class QuaternionRing implements Ring<Quaternion> {
+public final class QuaternionRing implements DivisionRing<Quaternion> {
 
     public static final QuaternionRing INSTANCE = new QuaternionRing();
 
@@ -39,6 +39,21 @@ public final class QuaternionRing implements Ring<Quaternion> {
     @Override
     public Quaternion multiply(Quaternion a, Quaternion b) {
         return a.multiply(b);
+    }
+
+    @Override
+    public Quaternion reciprocal(Quaternion a) {
+        return a.reciprocal();
+    }
+
+    @Override
+    public Quaternion divide(Quaternion a, Quaternion b) {
+        return a.divide(b);
+    }
+
+    @Override
+    public Quaternion divideLeft(Quaternion a, Quaternion b) {
+        return b.reciprocal().multiply(a);
     }
 
     @Override

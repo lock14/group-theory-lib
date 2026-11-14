@@ -2,6 +2,7 @@ package lock14.algebra.discrete;
 
 import java.util.Objects;
 import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.Field;
 
 /**
  * The Commutative Polynomial Ring R[x] over a base {@link CommutativeRing} R.
@@ -12,6 +13,13 @@ public record PolynomialRing<T>(CommutativeRing<T> coefficientRing) implements C
 
     public PolynomialRing {
         Objects.requireNonNull(coefficientRing, "coefficientRing cannot be null");
+    }
+
+    /**
+     * Constructs the Euclidean polynomial domain {@code F[x]} over a scalar {@link Field} {@code F}.
+     */
+    public static <T> PolynomialEuclideanDomain<T> overField(Field<T> coefficientField) {
+        return new PolynomialEuclideanDomain<>(coefficientField);
     }
 
     @Override

@@ -23,7 +23,11 @@ public final class AlgebraicContext {
     }
 
     public static double currentEpsilon() {
-        return EPSILON.orElse(DEFAULT_EPSILON);
+        double eps = EPSILON.orElse(DEFAULT_EPSILON);
+        if (Double.isNaN(eps) || eps < 0.0) {
+            throw new IllegalStateException("AlgebraicContext.EPSILON must be non-negative: " + eps);
+        }
+        return eps;
     }
 
     public static MathContext currentMathContext() {

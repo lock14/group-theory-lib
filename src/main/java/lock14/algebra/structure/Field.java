@@ -8,7 +8,7 @@ import lock14.algebra.exceptions.NonInvertibleElementException;
  *
  * @param <T> the carrier type of elements
  */
-public interface Field<T> extends EuclideanDomain<T> {
+public interface Field<T> extends EuclideanDomain<T>, DivisionRing<T> {
 
     /**
      * Returns the multiplicative inverse (1 / a) of non-zero element {@code a}.
@@ -17,6 +17,7 @@ public interface Field<T> extends EuclideanDomain<T> {
      * @return the reciprocal of {@code a}
      * @throws ArithmeticException or {@link NonInvertibleElementException} if {@code a} is zero
      */
+    @Override
     T reciprocal(T a);
 
     /**
@@ -55,6 +56,7 @@ public interface Field<T> extends EuclideanDomain<T> {
     /**
      * Views the non-zero elements of this field as a multiplicative {@link AbelianGroup}.
      */
+    @Override
     default AbelianGroup<T> asMultiplicativeGroupOfUnits() {
         return new AbelianGroup<>() {
             @Override

@@ -1,5 +1,7 @@
 package lock14.algebra.numbers;
 
+import java.util.Objects;
+import lock14.algebra.context.AlgebraicContext;
 import lock14.algebra.structure.Field;
 
 /**
@@ -65,5 +67,17 @@ public final class RealField implements Field<Double> {
     @Override
     public boolean isOne(Double element) {
         return element == 1.0;
+    }
+
+    /**
+     * Checks whether {@code a} and {@code b} are within the ambient {@link AlgebraicContext#currentEpsilon()}.
+     */
+    public boolean approxEquals(Double a, Double b) {
+        Objects.requireNonNull(a, "a cannot be null");
+        Objects.requireNonNull(b, "b cannot be null");
+        if (a.equals(b)) {
+            return true;
+        }
+        return Math.abs(a - b) <= AlgebraicContext.currentEpsilon();
     }
 }
