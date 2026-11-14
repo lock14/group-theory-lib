@@ -105,3 +105,14 @@ Requires **OpenJDK 25 LTS** or higher:
 ```bash
 ./mvnw clean test javadoc:javadoc
 ```
+
+---
+
+## 🤝 Contributing & Security
+
+* **Contributing:** We welcome contributions! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for architectural invariants, `jqwik` law-testing conventions, and pull request verification steps.
+* **Security:** Please report security vulnerabilities privately according to our [Security Policy](SECURITY.md).
+
+## 📄 License
+
+Apache License, Version 2.0. See [LICENSE](LICENSE).
