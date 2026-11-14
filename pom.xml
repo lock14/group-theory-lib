@@ -6,7 +6,7 @@
 
   <groupId>lock14</groupId>
   <artifactId>group-theory-lib</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>3.0.0-SNAPSHOT</version>
   <name>group-theory-lib</name>
   <description>Modern Abstract and Linear Algebra Library in Java 25 LTS</description>
 
@@ -66,6 +66,15 @@
         <version>3.6.1</version>
         <configuration>
           <argLine>@{argLine} --add-opens lock14.algebra/lock14.algebra.laws=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.12.0</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+          <failOnWarnings>true</failOnWarnings>
         </configuration>
       </plugin>
       <plugin>

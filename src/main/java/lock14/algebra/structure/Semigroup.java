@@ -14,12 +14,13 @@ import java.util.Objects;
 public interface Semigroup<T> extends Magma<T> {
 
     /**
-     * Repeats the combination of {@code element} with itself {@code n} times (n >= 1).
-     * Uses binary exponentiation for O(log n) evaluations.
+     * Repeats the combination of {@code element} with itself {@code n} times ({@code n >= 1}).
+     * Uses binary exponentiation for {@code O(log n)} evaluations.
      *
      * @param element the element to repeat
-     * @param n       the number of times to combine (must be >= 1)
-     * @return the result of element^n
+     * @param n       the number of times to combine (must be {@code >= 1})
+     * @return the result of {@code element^n}
+     * @throws IllegalArgumentException if {@code n <= 0}
      */
     default T repeat(T element, int n) {
         Objects.requireNonNull(element, "element cannot be null");

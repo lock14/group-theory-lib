@@ -1,10 +1,10 @@
 package lock14.algebra.laws;
 
+import lock14.algebra.structure.Field;
+import lock14.algebra.structure.LeftModule;
+import lock14.algebra.structure.VectorSpace;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
-import lock14.algebra.structure.Field;
-import lock14.algebra.structure.Module;
-import lock14.algebra.structure.VectorSpace;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class VectorSpaceLaws<V, F> extends ModuleLaws<V, F> {
@@ -12,7 +12,7 @@ public abstract class VectorSpaceLaws<V, F> extends ModuleLaws<V, F> {
     protected abstract VectorSpace<V, F> vectorSpace();
 
     @Override
-    protected Module<V, F> module() {
+    protected LeftModule<V, F> module() {
         return vectorSpace();
     }
 

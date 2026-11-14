@@ -42,8 +42,8 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x ./mvnw
 
-      - name: Run Maven Test Suite
-        run: ./mvnw --batch-mode --no-transfer-progress clean test
+      - name: Run Maven Test Suite & Verify Javadoc
+        run: ./mvnw --batch-mode --no-transfer-progress clean test javadoc:javadoc
 
   # =========================================================================
   # Gatekeeper Pattern:
