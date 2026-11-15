@@ -3,7 +3,7 @@
 [![CI](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml)
 [![Security](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml)
 [![Benchmarks](https://github.com/lock14/group-theory-lib/actions/workflows/benchmark.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/benchmark.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/lock14/group-theory-lib)](https://codecov.io/gh/lock14/group-theory-lib)
+[![Coverage](https://img.shields.io/codecov/c/github/lock14/group-theory-lib/main)](https://app.codecov.io/gh/lock14/group-theory-lib/tree/main)
 [![Java 25](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
