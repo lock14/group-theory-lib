@@ -1,6 +1,11 @@
 package lock14.algebra.group;
 
-import java.util.LinkedHashSet;
+import java.math.BigInteger;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
@@ -35,15 +40,19 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
 
         @Override
         public String toString() {
-            if (rotation == 0 && !reflected) return "e";
-            if (rotation == 0) return "s";
+            if (rotation == 0 && !reflected) {
+                return "e";
+            }
+            if (rotation == 0) {
+                return "s";
+            }
             String rot = rotation == 1 ? "r" : "r^" + rotation;
             return reflected ? rot + "s" : rot;
         }
     }
 
     private final int polygonSides;
-    private final Set<Element> elements;
+    private final Set<Element> elementsView;
 
     /**
      * Constructs the dihedral group {@code D_n} of symmetries of a regular {@code n}-gon (having order {@code 2n}).
@@ -56,14 +65,7 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
             throw new IllegalArgumentException("Polygon sides n must be positive: " + polygonSides);
         }
         this.polygonSides = polygonSides;
-        Set<Element> elems = new LinkedHashSet<>(2 * polygonSides);
-        for (int k = 0; k < polygonSides; k++) {
-            elems.add(new Element(k, false));
-        }
-        for (int k = 0; k < polygonSides; k++) {
-            elems.add(new Element(k, true));
-        }
-        this.elements = Set.copyOf(elems);
+        this.elementsView = new ElementsSet();
     }
 
     /**
@@ -95,12 +97,25 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
 
     @Override
     public Set<Element> elements() {
-        return elements;
+        return elementsView;
     }
 
     @Override
-    public long order() {
-        return 2L * polygonSides;
+    public Collection<Element> generators() {
+        if (polygonSides == 1) {
+            return List.of(reflectionGenerator());
+        }
+        return List.of(rotationGenerator(), reflectionGenerator());
+    }
+
+    @Override
+    public BigInteger order() {
+        return BigInteger.valueOf(2L * polygonSides);
+    }
+
+    @Override
+    public boolean isAbelian() {
+        return polygonSides <= 2;
     }
 
     @Override
@@ -112,9 +127,10 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
     public Element combine(Element left, Element right) {
         checkInGroup(left);
         checkInGroup(right);
-        int rot = left.reflected()
-            ? Math.floorMod(left.rotation() - right.rotation(), polygonSides)
-            : Math.floorMod(left.rotation() + right.rotation(), polygonSides);
+        long diff = left.reflected()
+            ? (long) left.rotation() - right.rotation()
+            : (long) left.rotation() + right.rotation();
+        int rot = Math.floorMod(diff, polygonSides);
         boolean refl = left.reflected() ^ right.reflected();
         return new Element(rot, refl);
     }
@@ -125,22 +141,13 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
         if (element.reflected()) {
             return element;
         }
-        return new Element(Math.floorMod(-element.rotation(), polygonSides), false);
+        return new Element(Math.floorMod(-(long) element.rotation(), polygonSides), false);
     }
 
     @Override
     public boolean contains(Element element) {
         Objects.requireNonNull(element, "element cannot be null");
         return element.rotation() >= 0 && element.rotation() < polygonSides;
-    }
-
-    private void checkInGroup(Element e) {
-        Objects.requireNonNull(e, "element cannot be null");
-        if (e.rotation() < 0 || e.rotation() >= polygonSides) {
-            throw new IncompatibleAlgebraException(
-                "Element " + e + " does not belong to D_" + polygonSides
-            );
-        }
     }
 
     @Override
@@ -156,5 +163,56 @@ public final class DihedralGroup implements FiniteGroup<DihedralGroup.Element> {
     @Override
     public String toString() {
         return "D_" + polygonSides;
+    }
+
+    private void checkInGroup(Element e) {
+        Objects.requireNonNull(e, "element cannot be null");
+        if (e.rotation() < 0 || e.rotation() >= polygonSides) {
+            throw new IncompatibleAlgebraException(
+                "Element " + e + " does not belong to D_" + polygonSides
+            );
+        }
+    }
+
+    private final class ElementsSet extends AbstractSet<Element> {
+        @Override
+        public int size() {
+            return (int) Math.min(2L * polygonSides, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return o instanceof Element e && DihedralGroup.this.contains(e);
+        }
+
+        @Override
+        public Iterator<Element> iterator() {
+            return new Iterator<>() {
+                private long cursor = 0;
+                private final long total = 2L * polygonSides;
+
+                @Override
+                public boolean hasNext() {
+                    return cursor < total;
+                }
+
+                @Override
+                public Element next() {
+                    if (cursor >= total) {
+                        throw new NoSuchElementException();
+                    }
+                    long idx = cursor++;
+                    if (idx < polygonSides) {
+                        return new Element((int) idx, false);
+                    }
+                    return new Element((int) (idx - polygonSides), true);
+                }
+            };
+        }
     }
 }

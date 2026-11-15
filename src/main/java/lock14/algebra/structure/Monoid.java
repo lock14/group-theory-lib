@@ -1,5 +1,6 @@
 package lock14.algebra.structure;
 
+import java.math.BigInteger;
 import java.util.Objects;
 import java.util.stream.Collector;
 import java.util.stream.Gatherer;
@@ -63,6 +64,37 @@ public interface Monoid<T> extends Semigroup<T> {
             return identity();
         }
         return repeat(element, n);
+    }
+
+    /**
+     * Raises {@code element} to an arbitrary non-negative {@link BigInteger} power via binary exponentiation.
+     *
+     * @param element the base element
+     * @param n       the non-negative exponent ({@code n >= 0})
+     * @return {@code element} combined with itself {@code n} times, or {@link #identity()} when {@code n == 0}
+     * @throws IllegalArgumentException if {@code n < 0}
+     */
+    default T power(T element, BigInteger n) {
+        Objects.requireNonNull(element, "element cannot be null");
+        Objects.requireNonNull(n, "exponent cannot be null");
+        if (n.signum() < 0) {
+            throw new IllegalArgumentException("Exponent in a Monoid must be non-negative: " + n);
+        }
+        if (n.signum() == 0) {
+            return identity();
+        }
+        T result = null;
+        T current = element;
+        int bitLen = n.bitLength();
+        for (int i = 0; i < bitLen; i++) {
+            if (n.testBit(i)) {
+                result = (result == null) ? current : combine(result, current);
+            }
+            if (i + 1 < bitLen) {
+                current = combine(current, current);
+            }
+        }
+        return result;
     }
 
     /**

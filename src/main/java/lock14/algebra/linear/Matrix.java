@@ -3,6 +3,7 @@ package lock14.algebra.linear;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+import lock14.algebra.structure.DivisionRing;
 import lock14.algebra.structure.Ring;
 
 /**
@@ -250,44 +251,41 @@ public sealed interface Matrix<T> permits RectangularMatrix, SquareMatrix {
     Matrix<T> transpose();
 
     /**
-     * Returns this matrix as a {@link SquareMatrix} if square, or throws {@link IllegalArgumentException} otherwise.
+     * Computes the Reduced Row Echelon Form (RREF) over {@code divisionRing}.
      *
-     * @return this matrix narrowed to {@link SquareMatrix}
-     */
-    SquareMatrix<T> asSquareMatrix();
-
-    /**
-     * Computes the Reduced Row Echelon Form (RREF) over a {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
-     *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return the {@link RrefResult} containing the reduced matrix, pivot columns, rank, and nullity
      */
-    RrefResult<T> rref();
+    RrefResult<T> rref(DivisionRing<T> divisionRing);
 
     /**
-     * Returns the row/column rank of this matrix over a {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
+     * Returns the row and column rank of this matrix over {@code divisionRing}.
      *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return the matrix rank
      */
-    default int rank() {
-        return rref().rank();
+    default int rank(DivisionRing<T> divisionRing) {
+        return rref(divisionRing).rank();
     }
 
     /**
-     * Returns the right nullity ({@code cols() - rank()}) of this matrix over a {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
+     * Returns the right nullity ({@code cols() - rank(divisionRing)}) of this matrix over {@code divisionRing}.
      *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return the matrix nullity
      */
-    default int nullity() {
-        return rref().nullity();
+    default int nullity(DivisionRing<T> divisionRing) {
+        return rref(divisionRing).nullity();
     }
 
     /**
-     * Computes a basis for the right nullspace (kernel) {@code { v in R^cols | this * v = 0 }}
-     * over a {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
+     * Computes a basis for the right nullspace (kernel) {@code { v in D^cols | this * v = 0 }}
+     * over {@code divisionRing}.
      *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return an unmodifiable list of basis vectors spanning the right kernel
      */
-    default List<Vector<T>> kernel() {
-        return MatrixOps.kernel(rref());
+    default List<Vector<T>> kernel(DivisionRing<T> divisionRing) {
+        return MatrixOps.kernel(divisionRing, rref(divisionRing));
     }
 }

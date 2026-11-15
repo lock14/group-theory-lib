@@ -113,17 +113,6 @@ public record QuaternionRing<T>(CommutativeRing<T> scalarRing) implements Ring<Q
         return element.isOne();
     }
 
-    /**
-     * Returns {@code true} if {@code element} has a multiplicative inverse in this quaternion ring.
-     *
-     * @param element the quaternion element to test
-     * @return {@code true} if {@code element} is invertible
-     */
-    public boolean isUnit(Quaternion<T> element) {
-        checkInRing(element);
-        return element.tryReciprocal().isPresent();
-    }
-
     private void checkInRing(Quaternion<T> q) {
         Objects.requireNonNull(q, "quaternion cannot be null");
         if (!Objects.equals(q.scalarRing(), this.scalarRing)) {

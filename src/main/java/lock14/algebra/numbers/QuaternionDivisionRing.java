@@ -1,6 +1,7 @@
 package lock14.algebra.numbers;
 
 import java.util.Objects;
+import java.util.Optional;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.structure.DivisionRing;
 import lock14.algebra.structure.Field;
@@ -112,9 +113,15 @@ public record QuaternionDivisionRing<T>(Field<T> scalarField) implements Divisio
     }
 
     @Override
+    public Optional<Quaternion<T>> tryReciprocal(Quaternion<T> a) {
+        checkInRing(a);
+        return a.tryReciprocal(scalarField);
+    }
+
+    @Override
     public Quaternion<T> reciprocal(Quaternion<T> a) {
         checkInRing(a);
-        return a.reciprocal();
+        return a.reciprocal(scalarField);
     }
 
     @Override

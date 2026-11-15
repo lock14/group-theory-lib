@@ -2,6 +2,7 @@ package lock14.algebra.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -20,12 +21,12 @@ class GroupExamplesTest {
         ));
 
         QuotientGroup<Permutation> s4ModV4 = QuotientGroup.of(s4, kleinFour);
-        long conjugacyClassCount = GroupAction.conjugation(s4)
+        BigInteger conjugacyClassCount = GroupAction.conjugation(s4)
                 .countOrbitsBurnside(s4, s4.elements());
         // @end
 
         assertThat(kleinFour.isNormal()).isTrue();
-        assertThat(s4ModV4.order()).isEqualTo(6L);
-        assertThat(conjugacyClassCount).isEqualTo(5L);
+        assertThat(s4ModV4.order()).isEqualTo(BigInteger.valueOf(6));
+        assertThat(conjugacyClassCount).isEqualTo(BigInteger.valueOf(5));
     }
 }

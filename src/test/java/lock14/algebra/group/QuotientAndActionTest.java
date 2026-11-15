@@ -1,5 +1,6 @@
 package lock14.algebra.group;
 
+import java.math.BigInteger;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class QuotientAndActionTest extends FiniteGroupLaws<Coset<Permutation>> {
     @Test
     public void testQuotientGroupStructureAndFirstIsomorphismTheorem() {
         // S_4 / V_4 is isomorphic to S_3 (non-abelian of order 6)
-        assertThat(s4ModV4.order()).isEqualTo(6L);
+        assertThat(s4ModV4.order()).isEqualTo(BigInteger.valueOf(6));
         assertThat(s4ModV4.isAbelian()).isFalse();
         assertThat(s4ModV4.canonicalProjection().isValidHomomorphism(s4, s4ModV4)).isTrue();
 
@@ -45,7 +46,7 @@ public class QuotientAndActionTest extends FiniteGroupLaws<Coset<Permutation>> {
         CyclicGroup c2 = new CyclicGroup(2);
         Subgroup<Permutation> kerSgn = Subgroup.kernel(s4.signHomomorphism(), s4, c2);
         QuotientGroup<Permutation> quotientByAlternating = QuotientGroup.of(s4, kerSgn);
-        assertThat(quotientByAlternating.order()).isEqualTo(2L);
+        assertThat(quotientByAlternating.order()).isEqualTo(BigInteger.TWO);
         assertThat(quotientByAlternating.isAbelian()).isTrue();
 
         // Non-normal subgroup <(0 1)> in S_4 cannot form a quotient group
@@ -61,13 +62,17 @@ public class QuotientAndActionTest extends FiniteGroupLaws<Coset<Permutation>> {
         GroupAction<Permutation, Permutation> conj = GroupAction.conjugation(s4);
         Set<Set<Permutation>> classes = conj.orbits(s4, s4.elements());
         assertThat(classes).hasSize(5);
-        assertThat(conj.countOrbitsBurnside(s4, s4.elements())).isEqualTo(5L);
+        assertThat(conj.countOrbitsBurnside(s4, s4.elements())).isEqualTo(BigInteger.valueOf(5));
 
         for (Permutation x : s4.elements()) {
-            long orbitSize = conj.orbit(s4, x).size();
-            long stabOrder = conj.stabilizer(s4, x).order();
-            assertThat(orbitSize * stabOrder).isEqualTo(s4.order());
+            BigInteger orbitSize = BigInteger.valueOf(conj.orbit(s4, x).size());
+            BigInteger stabOrder = conj.stabilizer(s4, x).order();
+            assertThat(orbitSize.multiply(stabOrder)).isEqualTo(s4.order());
         }
+
+        // Generator BFS computes orbits on S_25 in O(|orbit| * |S|) without enumerating 25! elements
+        Set<Integer> transitiveOrbit = GroupAction.permutationOnPoints().orbit(new SymmetricGroup(25), 0);
+        assertThat(transitiveOrbit).hasSize(25);
     }
 
     @Test
@@ -84,10 +89,6 @@ public class QuotientAndActionTest extends FiniteGroupLaws<Coset<Permutation>> {
             ));
         }
 
-        // D_4 action on vertices 0, 1, 2, 3 of a square:
-        // r: i -> (i + 1) mod 4; s: i -> (4 - i) mod 4; general r^k s^eps:
-        // if eps == false: v at position p comes from (p - k) mod 4
-        // if eps == true:  s first maps x -> (-x) mod 4, then r^k maps -> (k - x) mod 4 (an involution!)
         GroupAction<DihedralGroup.Element, List<Integer>> coloringAction = (sym, colors) -> {
             Integer[] next = new Integer[4];
             for (int v = 0; v < 4; v++) {
@@ -99,7 +100,7 @@ public class QuotientAndActionTest extends FiniteGroupLaws<Coset<Permutation>> {
             return List.of(next);
         };
 
-        assertThat(coloringAction.countOrbitsBurnside(d4, allColorings)).isEqualTo(6L);
+        assertThat(coloringAction.countOrbitsBurnside(d4, allColorings)).isEqualTo(BigInteger.valueOf(6));
         assertThat(coloringAction.orbits(d4, allColorings)).hasSize(6);
     }
 }

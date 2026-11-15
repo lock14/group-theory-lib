@@ -14,7 +14,7 @@ class NumericExamplesTest {
         double[] rotated = rotZ90.rotate(1.0, 0.0, 0.0);
 
         double[] solution;
-        try (Float64Matrix m = Float64Matrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}})) {
+        try (Float64SquareMatrix m = Float64SquareMatrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}})) {
             solution = ScopedValue.where(NumericContext.EPSILON, 1e-12)
                     .call(() -> m.solve(new double[]{1.0, 2.0}));
         }

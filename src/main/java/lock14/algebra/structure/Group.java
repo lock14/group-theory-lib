@@ -1,5 +1,6 @@
 package lock14.algebra.structure;
 
+import java.math.BigInteger;
 import java.util.Objects;
 
 /**
@@ -56,6 +57,19 @@ public interface Group<T> extends Monoid<T> {
             return powerPositive(inverse(element), -n);
         }
         return powerPositive(element, n);
+    }
+
+    @Override
+    default T power(T element, BigInteger n) {
+        Objects.requireNonNull(element, "element cannot be null");
+        Objects.requireNonNull(n, "exponent cannot be null");
+        int sig = n.signum();
+        if (sig == 0) {
+            return identity();
+        }
+        T base = sig < 0 ? inverse(element) : element;
+        BigInteger exp = n.abs();
+        return Monoid.super.power(base, exp);
     }
 
     private T powerPositive(T element, long n) {

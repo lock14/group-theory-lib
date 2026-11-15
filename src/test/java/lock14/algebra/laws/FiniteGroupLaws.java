@@ -1,5 +1,7 @@
 package lock14.algebra.laws;
 
+import java.math.BigInteger;
+import lock14.algebra.group.Subgroup;
 import lock14.algebra.structure.FiniteGroup;
 import lock14.algebra.structure.Group;
 import net.jqwik.api.ForAll;
@@ -17,11 +19,12 @@ public abstract class FiniteGroupLaws<T> extends GroupLaws<T> {
     }
 
     @Test
-    public void carrierSetContainsIdentityAndMatchesOrder() {
+    public void carrierSetContainsIdentityMatchesOrderAndIsGeneratedByGenerators() {
         FiniteGroup<T> g = finiteGroup();
         assertThat(g.elements()).isNotEmpty();
         assertThat(g.elements()).contains(g.identity());
-        assertThat(g.order()).isEqualTo(g.elements().size());
+        assertThat(g.order()).isEqualTo(BigInteger.valueOf(g.elements().size()));
+        assertThat(Subgroup.generate(g, g.generators()).elements()).isEqualTo(g.elements());
     }
 
     @Property
@@ -30,9 +33,9 @@ public abstract class FiniteGroupLaws<T> extends GroupLaws<T> {
         assertThat(g.elements()).contains(g.combine(a, b));
         assertThat(g.elements()).contains(g.inverse(a));
 
-        long elemOrder = g.elementOrder(a);
+        BigInteger elemOrder = g.elementOrder(a);
         assertThat(elemOrder).isPositive();
-        assertThat(g.order() % elemOrder).isZero();
+        assertThat(g.order().mod(elemOrder)).isZero();
         assertThat(g.power(a, elemOrder)).isEqualTo(g.identity());
         assertThat(g.power(a, g.order())).isEqualTo(g.identity());
     }

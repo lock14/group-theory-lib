@@ -1,6 +1,11 @@
 package lock14.algebra.group;
 
-import java.util.LinkedHashSet;
+import java.math.BigInteger;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
@@ -14,7 +19,7 @@ import lock14.algebra.structure.FiniteGroup;
 public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Integer> {
 
     private final int modulus;
-    private final Set<Integer> elements;
+    private final Set<Integer> elementsView;
 
     /**
      * Constructs the finite cyclic group {@code C_n} of the specified order.
@@ -27,11 +32,7 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
             throw new IllegalArgumentException("Cyclic group order must be positive: " + order);
         }
         this.modulus = order;
-        Set<Integer> elems = new LinkedHashSet<>(order);
-        for (int i = 0; i < order; i++) {
-            elems.add(i);
-        }
-        this.elements = Set.copyOf(elems);
+        this.elementsView = new ElementsSet();
     }
 
     /**
@@ -46,12 +47,26 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
 
     @Override
     public Set<Integer> elements() {
-        return elements;
+        return elementsView;
     }
 
     @Override
-    public long order() {
-        return modulus;
+    public Collection<Integer> generators() {
+        return List.of(generator());
+    }
+
+    @Override
+    public BigInteger order() {
+        return BigInteger.valueOf(modulus);
+    }
+
+    @Override
+    public BigInteger elementOrder(Integer element) {
+        checkInGroup(element);
+        if (element == 0) {
+            return BigInteger.ONE;
+        }
+        return BigInteger.valueOf(modulus / gcd(modulus, element));
     }
 
     @Override
@@ -63,7 +78,7 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
     public Integer combine(Integer left, Integer right) {
         checkInGroup(left);
         checkInGroup(right);
-        return (left + right) % modulus;
+        return (int) (((long) left + right) % modulus);
     }
 
     @Override
@@ -83,15 +98,6 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
         return true;
     }
 
-    private void checkInGroup(Integer elem) {
-        Objects.requireNonNull(elem, "element cannot be null");
-        if (elem < 0 || elem >= modulus) {
-            throw new IncompatibleAlgebraException(
-                "Element " + elem + " is outside CyclicGroup(" + modulus + ")"
-            );
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         return o instanceof CyclicGroup other && this.modulus == other.modulus;
@@ -105,5 +111,62 @@ public final class CyclicGroup implements FiniteGroup<Integer>, AbelianGroup<Int
     @Override
     public String toString() {
         return "C_" + modulus;
+    }
+
+    private void checkInGroup(Integer elem) {
+        Objects.requireNonNull(elem, "element cannot be null");
+        if (elem < 0 || elem >= modulus) {
+            throw new IncompatibleAlgebraException(
+                "Element " + elem + " is outside CyclicGroup(" + modulus + ")"
+            );
+        }
+    }
+
+    private static int gcd(int a, int b) {
+        int x = a;
+        int y = b;
+        while (y != 0) {
+            int t = x % y;
+            x = y;
+            y = t;
+        }
+        return x;
+    }
+
+    private final class ElementsSet extends AbstractSet<Integer> {
+        @Override
+        public int size() {
+            return modulus;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return o instanceof Integer val && val >= 0 && val < modulus;
+        }
+
+        @Override
+        public Iterator<Integer> iterator() {
+            return new Iterator<>() {
+                private int nextVal = 0;
+
+                @Override
+                public boolean hasNext() {
+                    return nextVal < modulus;
+                }
+
+                @Override
+                public Integer next() {
+                    if (nextVal >= modulus) {
+                        throw new NoSuchElementException();
+                    }
+                    return nextVal++;
+                }
+            };
+        }
     }
 }

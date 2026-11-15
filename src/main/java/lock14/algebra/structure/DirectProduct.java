@@ -1,6 +1,13 @@
 package lock14.algebra.structure;
 
-import java.util.LinkedHashSet;
+import java.math.BigInteger;
+import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 
@@ -111,15 +118,92 @@ public final class DirectProduct {
     public static <A, B> FiniteGroup<Pair<A, B>> finiteGroup(FiniteGroup<A> left, FiniteGroup<B> right) {
         Objects.requireNonNull(left, "left finite group cannot be null");
         Objects.requireNonNull(right, "right finite group cannot be null");
-        Set<Pair<A, B>> prod = new LinkedHashSet<>();
-        for (A a : left.elements()) {
-            for (B b : right.elements()) {
-                prod.add(new Pair<>(a, b));
+        Set<Pair<A, B>> lazyElements = new AbstractSet<>() {
+            private static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
+
+            @Override
+            public int size() {
+                return left.order().multiply(right.order()).min(MAX_INT).intValue();
             }
-        }
-        Set<Pair<A, B>> immutableElements = Set.copyOf(prod);
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return o instanceof Pair<?, ?> p
+                    && left.elements().contains(p.first())
+                    && right.elements().contains(p.second());
+            }
+
+            @Override
+            public Iterator<Pair<A, B>> iterator() {
+                return new Iterator<>() {
+                    private final Iterator<A> outer = left.elements().iterator();
+                    private Iterator<B> inner = Collections.emptyIterator();
+                    private A currentLeft;
+
+                    @Override
+                    public boolean hasNext() {
+                        while (!inner.hasNext() && outer.hasNext()) {
+                            currentLeft = outer.next();
+                            inner = right.elements().iterator();
+                        }
+                        return inner.hasNext();
+                    }
+
+                    @Override
+                    public Pair<A, B> next() {
+                        if (!hasNext()) {
+                            throw new NoSuchElementException();
+                        }
+                        return new Pair<>(currentLeft, inner.next());
+                    }
+                };
+            }
+        };
         record ProductFiniteGroup<L, R>(FiniteGroup<L> g1, FiniteGroup<R> g2, Set<Pair<L, R>> elements)
             implements FiniteGroup<Pair<L, R>> {
+            @Override
+            public Collection<Pair<L, R>> generators() {
+                List<Pair<L, R>> gens = new ArrayList<>();
+                R id2 = g2.identity();
+                for (L x : g1.generators()) {
+                    gens.add(new Pair<>(x, id2));
+                }
+                L id1 = g1.identity();
+                for (R y : g2.generators()) {
+                    gens.add(new Pair<>(id1, y));
+                }
+                return List.copyOf(gens);
+            }
+
+            @Override
+            public BigInteger order() {
+                return g1.order().multiply(g2.order());
+            }
+
+            @Override
+            public boolean contains(Pair<L, R> element) {
+                Objects.requireNonNull(element, "element cannot be null");
+                return g1.contains(element.first()) && g2.contains(element.second());
+            }
+
+            @Override
+            public BigInteger elementOrder(Pair<L, R> element) {
+                Objects.requireNonNull(element, "element cannot be null");
+                BigInteger o1 = g1.elementOrder(element.first());
+                BigInteger o2 = g2.elementOrder(element.second());
+                return o1.divide(o1.gcd(o2)).multiply(o2);
+            }
+
+            @Override
+            public boolean isAbelian() {
+                return g1.isAbelian() && g2.isAbelian();
+            }
+
             @Override
             public Pair<L, R> identity() {
                 return new Pair<>(g1.identity(), g2.identity());
@@ -135,7 +219,7 @@ public final class DirectProduct {
                 return new Pair<>(g1.inverse(element.first()), g2.inverse(element.second()));
             }
         }
-        return new ProductFiniteGroup<>(left, right, immutableElements);
+        return new ProductFiniteGroup<>(left, right, lazyElements);
     }
 
     /**

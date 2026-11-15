@@ -16,12 +16,12 @@ class LinearExamplesTest {
                 Rational.of(1), Rational.of(2),
                 Rational.of(3), Rational.of(4));
         Vector<Rational> b = Vector.of(Rationals.FIELD, Rational.of(5), Rational.of(11));
-        Vector<Rational> x = a.solve(b);
+        Vector<Rational> x = a.solve(Rationals.FIELD, b);
 
         Matrix<Rational> rect = Matrix.of(2, 4, Rationals.FIELD,
                 Rational.of(1), Rational.of(2), Rational.ZERO, Rational.of(3),
                 Rational.ZERO, Rational.ZERO, Rational.ONE, Rational.of(-1));
-        List<Vector<Rational>> nullspaceBasis = rect.kernel();
+        List<Vector<Rational>> nullspaceBasis = rect.kernel(Rationals.FIELD);
         // @end
 
         assertThat(x).isEqualTo(Vector.of(Rationals.FIELD, Rational.ONE, Rational.TWO));

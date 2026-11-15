@@ -6,7 +6,6 @@ import java.util.Optional;
 import lock14.algebra.element.RingElement;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.exceptions.NonInvertibleElementException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.structure.CommutativeRing;
 import lock14.algebra.structure.Field;
 
@@ -214,44 +213,43 @@ public record Complex<T>(T real, T imaginary, CommutativeRing<T> scalarRing) imp
     }
 
     /**
-     * Computes the exact multiplicative inverse {@code conjugate() / normSq()} when {@code scalarRing}
-     * is a {@link Field} (or {@code normSq()} is {@code 1}).
+     * Computes the exact multiplicative inverse {@code conjugate() / normSq()} over {@code scalarField}.
      *
+     * @param scalarField the governing scalar {@link Field} matching {@link #scalarRing()}
      * @return the multiplicative inverse {@code this^-1}
-     * @throws NonInvertibleElementException if this element is not invertible
-     * @throws UndefinedOperationException   if {@code scalarRing} is not a {@link Field} and {@code normSq()} is not {@code 1}
+     * @throws IncompatibleAlgebraException  if {@code scalarField} does not match {@link #scalarRing()}
+     * @throws NonInvertibleElementException if {@code normSq()} is zero in {@code scalarField}
      */
-    public Complex<T> reciprocal() {
-        return tryReciprocal().orElseThrow(
+    public Complex<T> reciprocal(Field<T> scalarField) {
+        return tryReciprocal(scalarField).orElseThrow(
             () -> new NonInvertibleElementException("Complex element is not invertible: " + this)
         );
     }
 
     /**
-     * Attempts to compute the exact multiplicative inverse of this complex element.
+     * Attempts to compute the exact multiplicative inverse of this complex element over {@code scalarField}.
      *
-     * @return an {@link Optional} containing {@code this^-1} if invertible, or {@link Optional#empty()} if {@code normSq() == 0}
-     * @throws UndefinedOperationException if {@code scalarRing} is not a {@link Field} and {@code normSq()} is not {@code 1}
+     * @param scalarField the governing scalar {@link Field} matching {@link #scalarRing()}
+     * @return an {@link Optional} containing {@code this^-1} if invertible, or {@link Optional#empty()} if {@code normSq()} is zero
+     * @throws IncompatibleAlgebraException if {@code scalarField} does not match {@link #scalarRing()}
      */
-    public Optional<Complex<T>> tryReciprocal() {
+    public Optional<Complex<T>> tryReciprocal(Field<T> scalarField) {
+        Objects.requireNonNull(scalarField, "scalarField cannot be null");
+        if (!Objects.equals(this.scalarRing, scalarField)) {
+            throw new IncompatibleAlgebraException(
+                "Complex scalar ring " + this.scalarRing + " does not match field " + scalarField
+            );
+        }
         T nSq = normSq();
-        if (scalarRing instanceof Field<T> field) {
-            if (field.isZero(nSq)) {
-                return Optional.empty();
-            }
-            T invNorm = field.reciprocal(nSq);
-            return Optional.of(new Complex<>(
-                field.multiply(real, invNorm),
-                field.multiply(field.negate(imaginary), invNorm),
-                scalarRing
-            ));
+        if (scalarField.isZero(nSq)) {
+            return Optional.empty();
         }
-        if (scalarRing.isOne(nSq)) {
-            return Optional.of(conjugate());
-        }
-        throw new UndefinedOperationException(
-            "General reciprocal requires a scalar Field; use GaussianIntegers or ComplexRing for ring operations"
-        );
+        T invNorm = scalarField.reciprocal(nSq);
+        return Optional.of(new Complex<>(
+            scalarField.multiply(real, invNorm),
+            scalarField.multiply(scalarField.negate(imaginary), invNorm),
+            scalarRing
+        ));
     }
 
     private void checkSameRing(Complex<T> other) {

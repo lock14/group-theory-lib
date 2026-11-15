@@ -1,5 +1,6 @@
 package lock14.algebra.structure;
 
+import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -8,26 +9,35 @@ import java.util.Queue;
 import java.util.Set;
 
 /**
- * A Finite Group is a {@link Group} with a finite, enumerable carrier set.
+ * A Finite Group is a {@link Group} with a finite carrier set and exact {@link BigInteger} cardinality.
  *
  * @param <T> the carrier type of elements
  */
 public interface FiniteGroup<T> extends Group<T> {
 
     /**
-     * Returns an unmodifiable view of all elements in this finite group.
+     * Returns an unmodifiable view (eager or lazy) of all elements in this finite group.
      *
      * @return an unmodifiable set containing all elements of this group
      */
     Set<T> elements();
 
     /**
-     * Returns the cardinality (order) {@code |G|} of this finite group.
+     * Returns a finite generating set {@code S} such that {@code <S>} equals this group.
      *
-     * @return the number of elements in this group
+     * @return an unmodifiable collection of group generators
      */
-    default long order() {
-        return elements().size();
+    default Collection<T> generators() {
+        return elements();
+    }
+
+    /**
+     * Returns the exact cardinality (order) {@code |G|} of this finite group.
+     *
+     * @return the exact number of elements in this group
+     */
+    default BigInteger order() {
+        return BigInteger.valueOf(elements().size());
     }
 
     /**
@@ -42,26 +52,26 @@ public interface FiniteGroup<T> extends Group<T> {
     }
 
     /**
-     * Computes the multiplicative order of {@code element}: the smallest positive integer {@code k}
+     * Computes the exact multiplicative order of {@code element}: the smallest positive integer {@code k}
      * such that {@code power(element, k)} equals {@link #identity()}.
      *
      * @param element the group element whose order is computed
      * @return the smallest positive integer {@code k} such that {@code power(element, k)} equals {@link #identity()}
      * @throws IllegalArgumentException if {@code element} does not belong to this group
      */
-    default long elementOrder(T element) {
+    default BigInteger elementOrder(T element) {
         Objects.requireNonNull(element, "element cannot be null");
         if (!contains(element)) {
             throw new IllegalArgumentException("Element does not belong to this group: " + element);
         }
         T id = identity();
         T current = element;
-        long k = 1;
-        long max = order();
+        BigInteger k = BigInteger.ONE;
+        BigInteger max = order();
         while (!Objects.equals(current, id)) {
             current = combine(current, element);
-            k++;
-            if (k > max) {
+            k = k.add(BigInteger.ONE);
+            if (k.compareTo(max) > 0) {
                 throw new IllegalStateException("Group closure violated while computing element order");
             }
         }
@@ -74,9 +84,9 @@ public interface FiniteGroup<T> extends Group<T> {
      * @return {@code true} if the group operation is commutative for all element pairs, {@code false} otherwise
      */
     default boolean isAbelian() {
-        Set<T> elems = elements();
-        for (T a : elems) {
-            for (T b : elems) {
+        Collection<T> gens = generators();
+        for (T a : gens) {
+            for (T b : gens) {
                 if (!Objects.equals(combine(a, b), combine(b, a))) {
                     return false;
                 }

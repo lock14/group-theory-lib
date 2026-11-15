@@ -1,5 +1,8 @@
 package lock14.algebra.group;
 
+import java.math.BigInteger;
+import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,9 +37,20 @@ public interface GroupAction<G, X> {
     default Set<X> orbit(FiniteGroup<G> group, X point) {
         Objects.requireNonNull(group, "group cannot be null");
         Objects.requireNonNull(point, "point cannot be null");
+        Collection<G> gens = group.generators();
+        X start = act(group.identity(), point);
         Set<X> orb = new LinkedHashSet<>();
-        for (G g : group.elements()) {
-            orb.add(act(g, point));
+        orb.add(start);
+        ArrayDeque<X> queue = new ArrayDeque<>();
+        queue.add(start);
+        while (!queue.isEmpty()) {
+            X current = queue.removeFirst();
+            for (G gen : gens) {
+                X next = act(gen, current);
+                if (orb.add(next)) {
+                    queue.addLast(next);
+                }
+            }
         }
         return Set.copyOf(orb);
     }
@@ -106,21 +120,22 @@ public interface GroupAction<G, X> {
      *
      * @param group the finite acting group
      * @param domain the finite G-invariant domain set {@code X}
-     * @return the number of distinct orbits of {@code group} on {@code domain}
+     * @return the exact number of distinct orbits of {@code group} on {@code domain}
      * @throws IllegalStateException if the fixed-point sum is not divisible by {@code |G|}
      */
-    default long countOrbitsBurnside(FiniteGroup<G> group, Set<X> domain) {
+    default BigInteger countOrbitsBurnside(FiniteGroup<G> group, Set<X> domain) {
         Objects.requireNonNull(group, "group cannot be null");
         Objects.requireNonNull(domain, "domain cannot be null");
-        long fixedSum = 0;
+        BigInteger fixedSum = BigInteger.ZERO;
         for (G g : group.elements()) {
-            fixedSum = Math.addExact(fixedSum, fixedPoints(g, domain).size());
+            fixedSum = fixedSum.add(BigInteger.valueOf(fixedPoints(g, domain).size()));
         }
-        long order = group.order();
-        if (fixedSum % order != 0) {
+        BigInteger order = group.order();
+        BigInteger[] divRem = fixedSum.divideAndRemainder(order);
+        if (divRem[1].signum() != 0) {
             throw new IllegalStateException("Action violates group action axioms on domain (Burnside sum not divisible by |G|)");
         }
-        return fixedSum / order;
+        return divRem[0];
     }
 
     /**

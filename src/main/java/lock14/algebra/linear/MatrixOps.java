@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import lock14.algebra.exceptions.NonInvertibleElementException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.group.Permutation;
 import lock14.algebra.structure.CommutativeRing;
 import lock14.algebra.structure.DivisionRing;
@@ -178,10 +177,7 @@ final class MatrixOps {
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T determinant(Ring<T> ring, Object[] data, int n) {
-        if (!(ring instanceof CommutativeRing<T> commRing)) {
-            throw new UndefinedOperationException("Determinant is not defined over non-commutative rings: " + ring);
-        }
+    static <T> T determinant(CommutativeRing<T> commRing, Object[] data, int n) {
         if (n == 1) {
             return (T) data[0];
         }
@@ -191,20 +187,17 @@ final class MatrixOps {
                 commRing.multiply((T) data[1], (T) data[2])
             );
         }
-        if (ring instanceof Field<T> field) {
+        if (commRing instanceof Field<T> field) {
             return lu(field, data, n).determinant();
         }
-        if (ring instanceof EuclideanDomain<T> domain) {
+        if (commRing instanceof EuclideanDomain<T> domain) {
             return determinantBareiss(domain, data, n);
         }
         return determinantBird(commRing, data, n);
     }
 
     @SuppressWarnings("unchecked")
-    static <T> LuDecomposition<T> lu(Ring<T> ring, Object[] data, int n) {
-        if (!(ring instanceof Field<T> field)) {
-            throw new UndefinedOperationException("LU decomposition requires a Field, got: " + ring);
-        }
+    static <T> LuDecomposition<T> lu(Field<T> field, Object[] data, int n) {
         Object[][] u = new Object[n][n];
         Object[][] l = new Object[n][n];
         T zero = field.zero();
@@ -281,10 +274,7 @@ final class MatrixOps {
     }
 
     @SuppressWarnings("unchecked")
-    static <T> RrefResult<T> rref(Ring<T> ring, Object[] data, int rows, int cols) {
-        if (!(ring instanceof DivisionRing<T> divRing)) {
-            throw new UndefinedOperationException("RREF requires a DivisionRing or Field, got: " + ring);
-        }
+    static <T> RrefResult<T> rref(DivisionRing<T> divRing, Object[] data, int rows, int cols) {
         Object[][] m = new Object[rows][cols];
         for (int r = 0; r < rows; r++) {
             System.arraycopy(data, r * cols, m[r], 0, cols);
@@ -332,15 +322,13 @@ final class MatrixOps {
             System.arraycopy(m[r], 0, flat, r * cols, cols);
         }
         Matrix<T> reduced = rows == cols
-            ? new SquareMatrix<>(rows, ring, flat)
-            : new RectangularMatrix<>(rows, cols, ring, flat);
+            ? new SquareMatrix<>(rows, divRing, flat)
+            : new RectangularMatrix<>(rows, cols, divRing, flat);
         return new RrefResult<>(reduced, pivots, pivots.size(), cols - pivots.size());
     }
 
-    static <T> List<Vector<T>> kernel(RrefResult<T> rref) {
+    static <T> List<Vector<T>> kernel(DivisionRing<T> divRing, RrefResult<T> rref) {
         Matrix<T> red = rref.reduced();
-        @SuppressWarnings("unchecked")
-        DivisionRing<T> divRing = (DivisionRing<T>) red.ring();
         int cols = red.cols();
         List<Integer> pivots = rref.pivotColumns();
         boolean[] isPivot = new boolean[cols];
@@ -371,10 +359,7 @@ final class MatrixOps {
      * Left-row Gauss-Jordan linear system solver for {@code A * X = B} over any {@link DivisionRing} {@code D}.
      */
     @SuppressWarnings("unchecked")
-    static <T> Object[] solve(Ring<T> ring, Object[] aData, Object[] bData, int n, int rhsCols) {
-        if (!(ring instanceof DivisionRing<T> divRing)) {
-            throw new UndefinedOperationException("Linear system solving / inversion requires a DivisionRing: " + ring);
-        }
+    static <T> Object[] solve(DivisionRing<T> divRing, Object[] aData, Object[] bData, int n, int rhsCols) {
         int totalCols = n + rhsCols;
         Object[][] aug = new Object[n][totalCols];
         for (int i = 0; i < n; i++) {
