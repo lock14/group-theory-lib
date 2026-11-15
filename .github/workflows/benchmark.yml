@@ -1,0 +1,248 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Benchmark suite to run (or "all" for all suites)'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  detect-suites:
+    name: Detect Affected Benchmark Suites
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.detect.outputs.suites }}
+      has_suites: ${{ steps.detect.outputs.has_suites }}
+      base_ref: ${{ steps.detect.outputs.base_ref }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Map changed files to JMH suites
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          INPUT_SUITE: ${{ inputs.suite }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          all_suites = [
+              "GroupBenchmarks",
+              "NumbersBenchmarks",
+              "PolynomialBenchmarks",
+              "QuotientBenchmarks",
+              "LinearBenchmarks",
+              "NumericBenchmarks",
+          ]
+          pkg_to_suite = {
+              "group": "GroupBenchmarks",
+              "numbers": "NumbersBenchmarks",
+              "polynomial": "PolynomialBenchmarks",
+              "quotient": "QuotientBenchmarks",
+              "linear": "LinearBenchmarks",
+              "numeric": "NumericBenchmarks",
+          }
+
+          event = os.environ.get("EVENT_NAME", "")
+          if event == "workflow_dispatch":
+              requested = (os.environ.get("INPUT_SUITE") or "all").strip()
+              selected = all_suites if requested in ("", "all") else [requested]
+              base_ref = "HEAD~1"
+          else:
+              if event == "pull_request":
+                  base_ref = f"origin/{os.environ['PR_BASE_REF']}"
+              else:
+                  before = os.environ.get("PUSH_BEFORE", "")
+                  base_ref = before if before and set(before) != {"0"} else "HEAD~1"
+
+              check = subprocess.run(
+                  ["git", "cat-file", "-e", base_ref + "^{commit}"],
+                  capture_output=True,
+                  text=True,
+              )
+              if check.returncode != 0:
+                  base_ref = "HEAD~1"
+
+              diff = subprocess.run(
+                  ["git", "diff", "--name-only", base_ref, "HEAD"],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+              changed_files = [line.strip() for line in diff.stdout.splitlines() if line.strip()]
+
+              found = set()
+              for path in changed_files:
+                  if path.startswith("src/main/java/lock14/algebra/"):
+                      parts = path.split("/")
+                      if len(parts) >= 6:
+                          pkg = parts[5]
+                          if pkg in ("structure", "element"):
+                              found.update(all_suites)
+                          elif pkg in pkg_to_suite:
+                              found.add(pkg_to_suite[pkg])
+                  elif path.startswith("src/jmh/java/lock14/algebra/benchmarks/") and path.endswith(".java"):
+                      suite_name = os.path.basename(path)[:-5]
+                      if suite_name in all_suites:
+                          found.add(suite_name)
+
+              selected = [s for s in all_suites if s in found]
+
+          has_suites = "true" if selected else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"suites={json.dumps(selected)}\n")
+              out.write(f"has_suites={has_suites}\n")
+              out.write(f"base_ref={base_ref}\n")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              if selected:
+                  summary.write("### Detected JMH Benchmark Suites\n\n")
+                  for s in selected:
+                      summary.write(f"- `{s}`\n")
+              else:
+                  summary.write(
+                      "### JMH Benchmarks Skipped\n\n"
+                      "No changes detected under `src/main/java/lock14/algebra/` or `src/jmh/java/`.\n"
+                  )
+          PY
+
+  benchmark:
+    name: Benchmark (${{ matrix.suite }})
+    needs: detect-suites
+    if: needs.detect-suites.outputs.has_suites == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJson(needs.detect-suites.outputs.suites) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
+
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Run HEAD JMH suite (${{ matrix.suite }})
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          ./mvnw --batch-mode --no-transfer-progress -Pbenchmarks test-compile exec:exec \
+            "-Djmh.args=${SUITE} -wi 2 -i 3 -f 1 -w 300ms -r 300ms -prof gc -rf json -rff jmh-result-head.json"
+
+      - name: Run Base JMH suite (${{ matrix.suite }}) if present
+        env:
+          BASE: ${{ needs.detect-suites.outputs.base_ref }}
+          SUITE: ${{ matrix.suite }}
+        run: |
+          if git cat-file -e "${BASE}:src/jmh/java/lock14/algebra/benchmarks/${SUITE}.java" 2>/dev/null && \
+             git show "${BASE}:pom.xml" | grep -q "<id>benchmarks</id>"; then
+            git worktree add ../base-worktree "${BASE}"
+            chmod +x ../base-worktree/mvnw
+            (
+              cd ../base-worktree
+              ./mvnw --batch-mode --no-transfer-progress -Pbenchmarks test-compile exec:exec \
+                "-Djmh.args=${SUITE} -wi 2 -i 3 -f 1 -w 300ms -r 300ms -prof gc -rf json -rff jmh-result-base.json"
+            )
+            cp ../base-worktree/jmh-result-base.json ./jmh-result-base.json
+            git worktree remove --force ../base-worktree
+          else
+            echo "Base ref ${BASE} does not contain ${SUITE}; reporting HEAD metrics."
+          fi
+
+      - name: Publish Benchmark Summary
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+
+          suite = os.environ["SUITE"]
+          with open("jmh-result-head.json", "r", encoding="utf-8") as fh:
+              head_entries = json.load(fh)
+
+          base_by_name = {}
+          if os.path.exists("jmh-result-base.json"):
+              with open("jmh-result-base.json", "r", encoding="utf-8") as fb:
+                  for item in json.load(fb):
+                      base_by_name[item["benchmark"]] = item
+
+          def alloc_b_per_op(entry):
+              sec = entry.get("secondaryMetrics", {})
+              for key in ("gc.alloc.rate.norm", "·gc.alloc.rate.norm"):
+                  if key in sec:
+                      return sec[key].get("score")
+              return None
+
+          lines = [f"### 📊 JMH Results: `{suite}`\n"]
+          if base_by_name:
+              lines.append("| Benchmark | Base (ns/op) | HEAD (ns/op) | Delta | Base Alloc (B/op) | HEAD Alloc (B/op) |")
+              lines.append("| :--- | ---: | ---: | ---: | ---: | ---: |")
+              for item in head_entries:
+                  full_name = item["benchmark"]
+                  short_name = full_name.split(".")[-1]
+                  head_score = item["primaryMetric"]["score"]
+                  head_alloc = alloc_b_per_op(item)
+                  head_alloc_str = f"{head_alloc:,.1f}" if head_alloc is not None else "n/a"
+
+                  base_item = base_by_name.get(full_name)
+                  if base_item is not None:
+                      base_score = base_item["primaryMetric"]["score"]
+                      delta_pct = ((head_score - base_score) / base_score * 100.0) if base_score else 0.0
+                      sign = "+" if delta_pct >= 0 else ""
+                      base_alloc = alloc_b_per_op(base_item)
+                      base_alloc_str = f"{base_alloc:,.1f}" if base_alloc is not None else "n/a"
+                      lines.append(
+                          f"| `{short_name}` | {base_score:,.2f} | {head_score:,.2f} | "
+                          f"{sign}{delta_pct:.2f}% | {base_alloc_str} | {head_alloc_str} |"
+                      )
+                  else:
+                      lines.append(
+                          f"| `{short_name}` | n/a | {head_score:,.2f} | new | n/a | {head_alloc_str} |"
+                      )
+          else:
+              lines.append("| Benchmark | HEAD (ns/op) | HEAD Alloc (B/op) |")
+              lines.append("| :--- | ---: | ---: |")
+              for item in head_entries:
+                  short_name = item["benchmark"].split(".")[-1]
+                  head_score = item["primaryMetric"]["score"]
+                  head_alloc = alloc_b_per_op(item)
+                  head_alloc_str = f"{head_alloc:,.1f}" if head_alloc is not None else "n/a"
+                  lines.append(f"| `{short_name}` | {head_score:,.2f} | {head_alloc_str} |")
+
+          report = "\n".join(lines) + "\n\n"
+          print(report)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(report)
+          PY

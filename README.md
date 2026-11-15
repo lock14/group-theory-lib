@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/ci.yml)
 [![Security](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/security.yml)
+[![Benchmarks](https://github.com/lock14/group-theory-lib/actions/workflows/benchmark.yml/badge.svg)](https://github.com/lock14/group-theory-lib/actions/workflows/benchmark.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/lock14/group-theory-lib)](https://codecov.io/gh/lock14/group-theory-lib)
 [![Java 25](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -105,7 +106,11 @@ try (Float64Matrix m = Float64Matrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}}
 Requires **OpenJDK 25 LTS** or higher:
 
 ```bash
-./mvnw clean test javadoc:javadoc
+# Run Enforcer, Checkstyle, unit & jqwik law tests, and snippet-verified Javadocs
+./mvnw clean validate test javadoc:javadoc
+
+# Run JMH microbenchmarks with GC allocation tracking (-prof gc)
+./mvnw -Pbenchmarks test-compile exec:exec "-Djmh.args=LinearBenchmarks -wi 2 -i 4 -f 1 -prof gc"
 ```
 
 ---

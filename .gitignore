@@ -6,3 +6,5 @@
 .idea
 *.iml
 .jqwik-database*
+jmh-result*.json
+*.jmh.log
