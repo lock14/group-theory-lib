@@ -17,7 +17,6 @@ coverage:
         threshold: 1%
 
 ignore:
-  - "src/jmh/**"
-  - "**/*ExamplesTest.java"
+  - "src/test/**"
   - ".github/**"
   - "*.md"

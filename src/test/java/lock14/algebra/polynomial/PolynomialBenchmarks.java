@@ -1,12 +1,10 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.polynomial;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lock14.algebra.numbers.Rational;
 import lock14.algebra.numbers.Rationals;
-import lock14.algebra.polynomial.Polynomial;
-import lock14.algebra.polynomial.PolynomialEuclideanDomain;
 import lock14.algebra.structure.EuclideanDomain;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

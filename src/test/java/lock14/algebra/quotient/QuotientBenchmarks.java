@@ -1,13 +1,9 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.quotient;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lock14.algebra.polynomial.Polynomial;
-import lock14.algebra.quotient.GaloisFields;
-import lock14.algebra.quotient.QuotientField;
-import lock14.algebra.quotient.Residue;
-import lock14.algebra.quotient.ZMod;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

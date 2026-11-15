@@ -103,7 +103,7 @@ jobs:
                               found.update(all_suites)
                           elif pkg in pkg_to_suite:
                               found.add(pkg_to_suite[pkg])
-                  elif path.startswith("src/jmh/java/lock14/algebra/benchmarks/") and path.endswith(".java"):
+                  elif path.startswith("src/test/java/lock14/algebra/") and path.endswith("Benchmarks.java"):
                       suite_name = os.path.basename(path)[:-5]
                       if suite_name in all_suites:
                           found.add(suite_name)
@@ -124,7 +124,7 @@ jobs:
               else:
                   summary.write(
                       "### JMH benchmarks skipped\n\n"
-                      "No changes detected under `src/main/java/lock14/algebra/` or `src/jmh/java/`.\n"
+                      "No changes detected under `src/main/java/lock14/algebra/` or `*Benchmarks.java`.\n"
                   )
           PY
 
@@ -165,7 +165,9 @@ jobs:
           BASE: ${{ needs.detect-suites.outputs.base_ref }}
           SUITE: ${{ matrix.suite }}
         run: |
-          if git cat-file -e "${BASE}:src/jmh/java/lock14/algebra/benchmarks/${SUITE}.java" 2>/dev/null && \
+          PKG=$(echo "${SUITE%Benchmarks}" | tr '[:upper:]' '[:lower:]')
+          if (git cat-file -e "${BASE}:src/test/java/lock14/algebra/${PKG}/${SUITE}.java" 2>/dev/null || \
+              git cat-file -e "${BASE}:src/jmh/java/lock14/algebra/benchmarks/${SUITE}.java" 2>/dev/null) && \
              git show "${BASE}:pom.xml" | grep -q "<id>benchmarks</id>"; then
             git worktree add ../base-worktree "${BASE}"
             chmod +x ../base-worktree/mvnw
@@ -196,7 +198,8 @@ jobs:
           if os.path.exists("jmh-result-base.json"):
               with open("jmh-result-base.json", "r", encoding="utf-8") as fb:
                   for item in json.load(fb):
-                      base_by_name[item["benchmark"]] = item
+                      short = ".".join(item["benchmark"].split(".")[-2:])
+                      base_by_name[short] = item
 
           def alloc_b_per_op(entry):
               sec = entry.get("secondaryMetrics", {})
@@ -212,11 +215,12 @@ jobs:
               for item in head_entries:
                   full_name = item["benchmark"]
                   short_name = full_name.split(".")[-1]
+                  suite_and_method = ".".join(full_name.split(".")[-2:])
                   head_score = item["primaryMetric"]["score"]
                   head_alloc = alloc_b_per_op(item)
                   head_alloc_str = f"{head_alloc:,.1f}" if head_alloc is not None else "n/a"
 
-                  base_item = base_by_name.get(full_name)
+                  base_item = base_by_name.get(suite_and_method)
                   if base_item is not None:
                       base_score = base_item["primaryMetric"]["score"]
                       delta_pct = ((head_score - base_score) / base_score * 100.0) if base_score else 0.0

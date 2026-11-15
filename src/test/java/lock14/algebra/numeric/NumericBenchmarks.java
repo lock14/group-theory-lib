@@ -1,10 +1,7 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.numeric;
 
 import java.lang.foreign.Arena;
 import java.util.concurrent.TimeUnit;
-import lock14.algebra.numeric.Float64Matrix;
-import lock14.algebra.numeric.Float64SquareMatrix;
-import lock14.algebra.numeric.Quaternion64;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
