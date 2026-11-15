@@ -1,10 +1,15 @@
 package lock14.algebra.group;
 
-import java.util.LinkedHashSet;
+import java.math.BigInteger;
+import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.structure.FiniteGroup;
 
 /**
@@ -12,10 +17,10 @@ import lock14.algebra.structure.FiniteGroup;
  */
 public final class AlternatingGroup implements FiniteGroup<Permutation> {
 
-    private static final int MAX_ENUMERABLE_DEGREE = 8;
+    private static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
 
     private final int degree;
-    private volatile Set<Permutation> cachedElements;
+    private final Set<Permutation> elementsView;
 
     /**
      * Constructs the alternating group {@code A_n} of degree {@code n}.
@@ -28,6 +33,7 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
             throw new IllegalArgumentException("Degree must be positive: " + degree);
         }
         this.degree = degree;
+        this.elementsView = new ElementsSet();
     }
 
     /**
@@ -41,47 +47,35 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
 
     @Override
     public Set<Permutation> elements() {
-        if (degree > MAX_ENUMERABLE_DEGREE) {
-            throw new UndefinedOperationException(
-                "Exhaustive enumeration of A_" + degree + " exceeds in-memory limit"
-            );
-        }
-        Set<Permutation> local = cachedElements;
-        if (local == null) {
-            synchronized (this) {
-                local = cachedElements;
-                if (local == null) {
-                    Set<Permutation> evens = new LinkedHashSet<>();
-                    for (Permutation p : SymmetricGroup.enumerateAll(degree)) {
-                        if (p.isEven()) {
-                            evens.add(p);
-                        }
-                    }
-                    local = Set.copyOf(evens);
-                    cachedElements = local;
-                }
-            }
-        }
-        return local;
+        return elementsView;
     }
 
     @Override
-    public long order() {
-        if (degree == 1) {
-            return 1L;
+    public Collection<Permutation> generators() {
+        if (degree <= 2) {
+            return List.of(identity());
         }
-        if (degree > 20) {
-            throw new ArithmeticException("Order of A_" + degree + " overflows 64-bit long");
+        List<Permutation> gens = new ArrayList<>(degree - 2);
+        for (int k = 2; k < degree; k++) {
+            gens.add(Permutation.fromCycles(degree, List.of(List.of(0, 1, k))));
         }
-        long factOver2 = 1L;
+        return List.copyOf(gens);
+    }
+
+    @Override
+    public BigInteger order() {
+        if (degree <= 2) {
+            return BigInteger.ONE;
+        }
+        BigInteger factOver2 = BigInteger.ONE;
         for (int i = 3; i <= degree; i++) {
-            factOver2 = Math.multiplyExact(factOver2, i);
+            factOver2 = factOver2.multiply(BigInteger.valueOf(i));
         }
         return factOver2;
     }
 
     @Override
-    public long elementOrder(Permutation element) {
+    public BigInteger elementOrder(Permutation element) {
         checkInGroup(element);
         return element.order();
     }
@@ -90,6 +84,11 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
     public boolean contains(Permutation element) {
         Objects.requireNonNull(element, "element cannot be null");
         return element.degree() == degree && element.isEven();
+    }
+
+    @Override
+    public boolean isAbelian() {
+        return degree <= 3;
     }
 
     @Override
@@ -110,18 +109,6 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
         return element.inverse();
     }
 
-    private void checkInGroup(Permutation p) {
-        Objects.requireNonNull(p, "permutation cannot be null");
-        if (p.degree() != degree) {
-            throw new IncompatibleAlgebraException(
-                "Permutation degree " + p.degree() + " does not belong to A_" + degree
-            );
-        }
-        if (!p.isEven()) {
-            throw new IncompatibleAlgebraException("Odd permutation " + p + " does not belong to A_" + degree);
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         return o instanceof AlternatingGroup other && this.degree == other.degree;
@@ -135,5 +122,75 @@ public final class AlternatingGroup implements FiniteGroup<Permutation> {
     @Override
     public String toString() {
         return "A_" + degree;
+    }
+
+    private void checkInGroup(Permutation p) {
+        Objects.requireNonNull(p, "permutation cannot be null");
+        if (p.degree() != degree) {
+            throw new IncompatibleAlgebraException(
+                "Permutation degree " + p.degree() + " does not belong to A_" + degree
+            );
+        }
+        if (!p.isEven()) {
+            throw new IncompatibleAlgebraException("Odd permutation " + p + " does not belong to A_" + degree);
+        }
+    }
+
+    private final class ElementsSet extends AbstractSet<Permutation> {
+        @Override
+        public int size() {
+            return order().min(MAX_INT).intValue();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return o instanceof Permutation p && AlternatingGroup.this.contains(p);
+        }
+
+        @Override
+        public Iterator<Permutation> iterator() {
+            return new Iterator<>() {
+                private final int[] state;
+                private int sign = 1;
+                private boolean hasMore = true;
+
+                {
+                    state = new int[degree];
+                    for (int i = 0; i < degree; i++) {
+                        state[i] = i;
+                    }
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return hasMore;
+                }
+
+                @Override
+                public Permutation next() {
+                    if (!hasMore) {
+                        throw new NoSuchElementException();
+                    }
+                    Permutation current = new Permutation(state.clone());
+                    while (true) {
+                        int factor = SymmetricGroup.advanceLexicographic(state);
+                        if (factor == 0) {
+                            hasMore = false;
+                            break;
+                        }
+                        sign *= factor;
+                        if (sign == 1) {
+                            break;
+                        }
+                    }
+                    return current;
+                }
+            };
+        }
     }
 }

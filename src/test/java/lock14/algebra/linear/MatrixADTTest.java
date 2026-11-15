@@ -49,10 +49,10 @@ public class MatrixADTTest {
 
     @Test
     public void testCrossAdtOperationsRowStreamingAndTraceExclusivity() {
-        boolean matrixHasTrace = Arrays.stream(Matrix.class.getDeclaredMethods())
+        List<String> matrixMethods = Arrays.stream(Matrix.class.getDeclaredMethods())
             .map(Method::getName)
-            .anyMatch("trace"::equals);
-        assertThat(matrixHasTrace).isFalse();
+            .toList();
+        assertThat(matrixMethods).doesNotContain("trace", "asSquareMatrix");
 
         SquareMatrix<Rational> sq = SquareMatrix.of(2, Rationals.FIELD,
             Rational.of(2), Rational.of(1),
@@ -66,10 +66,10 @@ public class MatrixADTTest {
             Rational.of(6), Rational.of(9), Rational.of(12),
             Rational.of(12), Rational.of(15), Rational.of(18)));
 
-        // (2x3) * (3x2) -> SquareMatrix (2x2)
+        // (2x3) * (3x2) -> SquareMatrix (2x2) narrowed via sealed pattern matching
         Matrix<Rational> gram = rect.multiply(rect.transpose());
-        assertThat(gram).isInstanceOf(SquareMatrix.class);
-        assertThat(gram.asSquareMatrix().trace()).isEqualTo(Rational.of(14 + 77));
+        assertThat(gram).isInstanceOfSatisfying(SquareMatrix.class,
+            squareGram -> assertThat(squareGram.trace()).isEqualTo(Rational.of(14 + 77)));
 
         assertThat(sq.streamRows().toList()).containsExactly(
             List.of(Rational.of(2), Rational.of(1)),
@@ -88,11 +88,11 @@ public class MatrixADTTest {
     @Property
     public void rankNullityAndKernelAnnihilationOverRationals(
             @ForAll("rectangularMatrices3x5") RectangularMatrix<Rational> a) {
-        int rank = a.rank();
-        int nullity = a.nullity();
+        int rank = a.rank(Rationals.FIELD);
+        int nullity = a.nullity(Rationals.FIELD);
         assertThat(rank + nullity).isEqualTo(5);
 
-        List<Vector<Rational>> basis = a.kernel();
+        List<Vector<Rational>> basis = a.kernel(Rationals.FIELD);
         assertThat(basis).hasSize(nullity);
         Vector<Rational> zero3 = Vector.zeros(3, Rationals.FIELD);
         for (Vector<Rational> v : basis) {
@@ -108,10 +108,10 @@ public class MatrixADTTest {
             hq.k(), hq.k().multiply(hq.i()), hq.k().multiply(hq.j()));
 
         // Row 1 is k * Row 0 -> rank 1, nullity 2!
-        assertThat(qm.rank()).isEqualTo(1);
-        assertThat(qm.nullity()).isEqualTo(2);
+        assertThat(qm.rank(hq)).isEqualTo(1);
+        assertThat(qm.nullity(hq)).isEqualTo(2);
         Vector<Quaternion<Rational>> zero2 = Vector.zeros(2, hq);
-        for (Vector<Quaternion<Rational>> v : qm.kernel()) {
+        for (Vector<Quaternion<Rational>> v : qm.kernel(hq)) {
             assertThat(qm.multiply(v)).isEqualTo(zero2);
         }
     }

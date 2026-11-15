@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import lock14.algebra.element.ModuleElement;
 import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
+import lock14.algebra.structure.DivisionRing;
 import lock14.algebra.structure.Ring;
 
 /**
@@ -275,13 +276,17 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
     }
 
     @Override
-    public RrefResult<T> rref() {
-        return MatrixOps.rref(ring, data, rows, cols);
+    public RrefResult<T> rref(DivisionRing<T> divisionRing) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
+        checkSameRing(divisionRing);
+        return MatrixOps.rref(divisionRing, data, rows, cols);
     }
 
     @Override
     public List<T> row(int r) {
-        if (r < 0 || r >= rows) throw new IndexOutOfBoundsException("Row " + r + " out of bounds");
+        if (r < 0 || r >= rows) {
+            throw new IndexOutOfBoundsException("Row " + r + " out of bounds");
+        }
         List<T> res = new ArrayList<>(cols);
         for (int c = 0; c < cols; c++) {
             res.add(get(r, c));
@@ -291,7 +296,9 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
 
     @Override
     public List<T> col(int c) {
-        if (c < 0 || c >= cols) throw new IndexOutOfBoundsException("Col " + c + " out of bounds");
+        if (c < 0 || c >= cols) {
+            throw new IndexOutOfBoundsException("Col " + c + " out of bounds");
+        }
         List<T> res = new ArrayList<>(rows);
         for (int r = 0; r < rows; r++) {
             res.add(get(r, c));
@@ -303,11 +310,6 @@ public final class RectangularMatrix<T> implements Matrix<T>, ModuleElement<Rect
     @SuppressWarnings("unchecked")
     public Stream<List<T>> streamRows() {
         return Arrays.stream((T[]) data).gather(Gatherers.windowFixed(cols));
-    }
-
-    @Override
-    public SquareMatrix<T> asSquareMatrix() {
-        throw new IllegalArgumentException("Cannot convert rectangular matrix (" + rows + "x" + cols + ") to SquareMatrix");
     }
 
     private void checkSameShape(RectangularMatrix<T> other) {

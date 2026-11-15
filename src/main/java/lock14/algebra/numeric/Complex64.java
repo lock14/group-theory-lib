@@ -3,7 +3,6 @@ package lock14.algebra.numeric;
 import java.util.Objects;
 import java.util.Optional;
 import lock14.algebra.exceptions.NonInvertibleElementException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 
 /**
  * IEEE-754 64-bit floating-point complex number {@code a + bi}, equipped with overflow-resistant
@@ -329,16 +328,25 @@ public record Complex64(double real, double imaginary) {
     }
 
     /**
+     * Attempts to compute the principal branch of the natural logarithm {@code ln(|this|) + i * arg(this)}.
+     *
+     * @return an {@link Optional} containing the principal complex logarithm if non-zero, or {@link Optional#empty()} if zero
+     */
+    public Optional<Complex64> tryLog() {
+        if (isZero()) {
+            return Optional.empty();
+        }
+        return Optional.of(new Complex64(Math.log(abs()), arg()));
+    }
+
+    /**
      * Computes the principal branch of the natural logarithm {@code ln(|this|) + i * arg(this)}.
      *
      * @return the principal complex logarithm
-     * @throws UndefinedOperationException if {@link #isZero()} is {@code true}
+     * @throws ArithmeticException if {@link #isZero()} is {@code true}
      */
     public Complex64 log() {
-        if (isZero()) {
-            throw new UndefinedOperationException("Complex logarithm of 0 is undefined");
-        }
-        return new Complex64(Math.log(abs()), arg());
+        return tryLog().orElseThrow(() -> new ArithmeticException("Complex logarithm of 0 is undefined"));
     }
 
     /**
@@ -361,24 +369,36 @@ public record Complex64(double real, double imaginary) {
     }
 
     /**
+     * Attempts to compute the principal complex power {@code this^exponent = exp(exponent * log(this))}.
+     *
+     * @param exponent the complex exponent
+     * @return an {@link Optional} containing {@code this^exponent} if defined, or {@link Optional#empty()} at the {@code 0^exponent} pole
+     */
+    public Optional<Complex64> tryPow(Complex64 exponent) {
+        Objects.requireNonNull(exponent, "exponent cannot be null");
+        if (this.isZero()) {
+            if (exponent.isZero()) {
+                return Optional.of(ONE);
+            }
+            if (exponent.real > 0.0) {
+                return Optional.of(ZERO);
+            }
+            return Optional.empty();
+        }
+        return Optional.of(exponent.multiply(this.log()).exp());
+    }
+
+    /**
      * Computes the principal complex power {@code this^exponent = exp(exponent * log(this))}.
      *
      * @param exponent the complex exponent
      * @return {@code this^exponent}
-     * @throws UndefinedOperationException if {@code this} is zero and {@code exponent} is non-zero with {@code exponent.real() <= 0}
+     * @throws ArithmeticException if {@code this} is zero and {@code exponent} is non-zero with {@code exponent.real() <= 0}
      */
     public Complex64 pow(Complex64 exponent) {
-        Objects.requireNonNull(exponent, "exponent cannot be null");
-        if (this.isZero()) {
-            if (exponent.isZero()) {
-                return ONE;
-            }
-            if (exponent.real > 0.0) {
-                return ZERO;
-            }
-            throw new UndefinedOperationException("0 raised to non-positive real-part exponent is undefined");
-        }
-        return exponent.multiply(this.log()).exp();
+        return tryPow(exponent).orElseThrow(
+            () -> new ArithmeticException("0 raised to non-positive real-part exponent is undefined")
+        );
     }
 
     /**

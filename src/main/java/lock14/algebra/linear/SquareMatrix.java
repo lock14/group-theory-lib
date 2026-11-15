@@ -12,6 +12,9 @@ import lock14.algebra.element.RingElement;
 import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.exceptions.NonInvertibleElementException;
+import lock14.algebra.structure.CommutativeRing;
+import lock14.algebra.structure.DivisionRing;
+import lock14.algebra.structure.Field;
 import lock14.algebra.structure.Ring;
 
 /**
@@ -296,58 +299,78 @@ public final class SquareMatrix<T>
     }
 
     /**
-     * Computes the exact determinant {@code det(this)} over any {@link lock14.algebra.structure.CommutativeRing}
+     * Computes the exact determinant {@code det(this)} over {@code commutativeRing}
      * (via LU over fields, fraction-free Bareiss elimination over Euclidean domains, or Bird's division-free
      * algorithm over general commutative rings).
      *
-     * @return the determinant in {@link #ring()}
+     * @param commutativeRing the governing {@link CommutativeRing} matching {@link #ring()}
+     * @return the determinant in {@code commutativeRing}
+     * @throws IncompatibleAlgebraException if {@code commutativeRing} does not match {@link #ring()}
      */
-    public T determinant() {
-        return MatrixOps.determinant(ring, data, dimension);
+    public T determinant(CommutativeRing<T> commutativeRing) {
+        Objects.requireNonNull(commutativeRing, "commutativeRing cannot be null");
+        checkSameRing(commutativeRing);
+        return MatrixOps.determinant(commutativeRing, data, dimension);
     }
 
     @Override
-    public RrefResult<T> rref() {
-        return MatrixOps.rref(ring, data, dimension, dimension);
+    public RrefResult<T> rref(DivisionRing<T> divisionRing) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
+        checkSameRing(divisionRing);
+        return MatrixOps.rref(divisionRing, data, dimension, dimension);
     }
 
     /**
-     * Computes the partial-pivoted LU decomposition {@code P * this = L * U} when {@link #ring()} is a {@link lock14.algebra.structure.Field}.
+     * Computes the partial-pivoted LU decomposition {@code P * this = L * U} over {@code field}.
      *
+     * @param field the governing {@link Field} matching {@link #ring()}
      * @return the {@link LuDecomposition} of this matrix
+     * @throws IncompatibleAlgebraException if {@code field} does not match {@link #ring()}
      */
-    public LuDecomposition<T> lu() {
-        return MatrixOps.lu(ring, data, dimension);
+    public LuDecomposition<T> lu(Field<T> field) {
+        Objects.requireNonNull(field, "field cannot be null");
+        checkSameRing(field);
+        return MatrixOps.lu(field, data, dimension);
     }
 
     /**
-     * Solves {@code this * x = rhs} over any {@link lock14.algebra.structure.DivisionRing} or {@link lock14.algebra.structure.Field}.
+     * Solves {@code this * x = rhs} over {@code divisionRing}.
      *
-     * @param rhs the right-hand side vector of dimension {@link #dimension()}
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
+     * @param rhs          the right-hand side vector of dimension {@link #dimension()}
      * @return the unique solution vector {@code x}
+     * @throws IncompatibleAlgebraException  if {@code divisionRing} or {@code rhs.ring()} does not match {@link #ring()}
+     * @throws DimensionMismatchException    if {@code rhs.dimension() != dimension()}
      * @throws NonInvertibleElementException if this matrix is singular
      */
-    public Vector<T> solve(Vector<T> rhs) {
+    public Vector<T> solve(DivisionRing<T> divisionRing, Vector<T> rhs) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
         Objects.requireNonNull(rhs, "rhs cannot be null");
+        checkSameRing(divisionRing);
         checkSameRing(rhs.ring());
         if (rhs.dimension() != dimension) {
             throw new DimensionMismatchException(
                 "RHS vector dimension " + rhs.dimension() + " does not match matrix dimension " + dimension
             );
         }
-        Object[] sol = MatrixOps.solve(ring, data, rhs.rawData(), dimension, 1);
+        Object[] sol = MatrixOps.solve(divisionRing, data, rhs.rawData(), dimension, 1);
         return new Vector<>(dimension, ring, sol);
     }
 
     /**
-     * Solves {@code this * X = rhs} for multiple right-hand sides over any {@link lock14.algebra.structure.DivisionRing}.
+     * Solves {@code this * X = rhs} for multiple right-hand sides over {@code divisionRing}.
      *
-     * @param rhs the right-hand side matrix with {@code rhs.rows() == this.dimension()}
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
+     * @param rhs          the right-hand side matrix with {@code rhs.rows() == this.dimension()}
      * @return the unique solution matrix {@code X} of shape {@code dimension() x rhs.cols()}
+     * @throws IncompatibleAlgebraException  if {@code divisionRing} or {@code rhs.ring()} does not match {@link #ring()}
+     * @throws DimensionMismatchException    if {@code rhs.rows() != dimension()}
      * @throws NonInvertibleElementException if this matrix is singular
      */
-    public Matrix<T> solve(Matrix<T> rhs) {
+    public Matrix<T> solve(DivisionRing<T> divisionRing, Matrix<T> rhs) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
         Objects.requireNonNull(rhs, "rhs cannot be null");
+        checkSameRing(divisionRing);
         checkSameRing(rhs.ring());
         if (rhs.rows() != dimension) {
             throw new DimensionMismatchException(
@@ -358,40 +381,50 @@ public final class SquareMatrix<T>
             case SquareMatrix<T> sm -> sm.rawData();
             case RectangularMatrix<T> rm -> rm.rawData();
         };
-        Object[] sol = MatrixOps.solve(ring, data, rhsData, dimension, rhs.cols());
+        Object[] sol = MatrixOps.solve(divisionRing, data, rhsData, dimension, rhs.cols());
         return dimension == rhs.cols()
             ? new SquareMatrix<>(dimension, ring, sol)
             : new RectangularMatrix<>(dimension, rhs.cols(), ring, sol);
     }
 
     /**
-     * Attempts to compute the multiplicative inverse {@code this^-1} over a {@link lock14.algebra.structure.DivisionRing}.
+     * Attempts to compute the multiplicative inverse {@code this^-1} over {@code divisionRing}.
      *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return an {@link Optional} containing {@code this^-1} if nonsingular, or {@link Optional#empty()} if singular
+     * @throws IncompatibleAlgebraException if {@code divisionRing} does not match {@link #ring()}
      */
-    public Optional<SquareMatrix<T>> tryInverse() {
+    public Optional<SquareMatrix<T>> tryInverse(DivisionRing<T> divisionRing) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
+        checkSameRing(divisionRing);
         try {
-            return Optional.of(inverse());
+            return Optional.of(inverse(divisionRing));
         } catch (NonInvertibleElementException ex) {
             return Optional.empty();
         }
     }
 
     /**
-     * Computes the exact multiplicative inverse {@code this^-1} over a {@link lock14.algebra.structure.DivisionRing}.
+     * Computes the exact multiplicative inverse {@code this^-1} over {@code divisionRing}.
      *
+     * @param divisionRing the governing {@link DivisionRing} matching {@link #ring()}
      * @return the inverse {@link SquareMatrix} {@code this^-1}
+     * @throws IncompatibleAlgebraException  if {@code divisionRing} does not match {@link #ring()}
      * @throws NonInvertibleElementException if this matrix is singular
      */
-    public SquareMatrix<T> inverse() {
+    public SquareMatrix<T> inverse(DivisionRing<T> divisionRing) {
+        Objects.requireNonNull(divisionRing, "divisionRing cannot be null");
+        checkSameRing(divisionRing);
         SquareMatrix<T> id = identity(dimension, ring);
-        Object[] invData = MatrixOps.solve(ring, data, id.data, dimension, dimension);
+        Object[] invData = MatrixOps.solve(divisionRing, data, id.data, dimension, dimension);
         return new SquareMatrix<>(dimension, ring, invData);
     }
 
     @Override
     public List<T> row(int r) {
-        if (r < 0 || r >= dimension) throw new IndexOutOfBoundsException("Row " + r + " out of bounds");
+        if (r < 0 || r >= dimension) {
+            throw new IndexOutOfBoundsException("Row " + r + " out of bounds");
+        }
         List<T> res = new ArrayList<>(dimension);
         for (int c = 0; c < dimension; c++) {
             res.add(get(r, c));
@@ -401,7 +434,9 @@ public final class SquareMatrix<T>
 
     @Override
     public List<T> col(int c) {
-        if (c < 0 || c >= dimension) throw new IndexOutOfBoundsException("Col " + c + " out of bounds");
+        if (c < 0 || c >= dimension) {
+            throw new IndexOutOfBoundsException("Col " + c + " out of bounds");
+        }
         List<T> res = new ArrayList<>(dimension);
         for (int r = 0; r < dimension; r++) {
             res.add(get(r, c));
@@ -413,11 +448,6 @@ public final class SquareMatrix<T>
     @SuppressWarnings("unchecked")
     public Stream<List<T>> streamRows() {
         return Arrays.stream((T[]) data).gather(Gatherers.windowFixed(dimension));
-    }
-
-    @Override
-    public SquareMatrix<T> asSquareMatrix() {
-        return this;
     }
 
     private void checkSameDimension(SquareMatrix<T> other) {

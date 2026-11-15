@@ -1,5 +1,6 @@
 package lock14.algebra.structure;
 
+import java.math.BigInteger;
 import lock14.algebra.group.CyclicGroup;
 import lock14.algebra.group.Permutation;
 import lock14.algebra.group.SymmetricGroup;
@@ -29,7 +30,7 @@ public class DirectProductGroupTest extends FiniteGroupLaws<Pair<Integer, Permut
 
     @Test
     public void testOrderAbelianStatusAndProjections() {
-        assertThat(product.order()).isEqualTo(18L);
+        assertThat(product.order()).isEqualTo(BigInteger.valueOf(18));
         assertThat(product.isAbelian()).isFalse();
 
         AbelianGroup<Pair<Integer, Integer>> c2xC3 = DirectProduct.abelianGroup(new CyclicGroup(2), c3);
@@ -51,5 +52,12 @@ public class DirectProductGroupTest extends FiniteGroupLaws<Pair<Integer, Permut
         GroupHomomorphism<Pair<Integer, Permutation>, Integer> composed = proj1.andThen(mod3Double);
         assertThat(proj1.isValidHomomorphism(product, c3)).isTrue();
         assertThat(composed.isValidHomomorphism(product, c3)).isTrue();
+
+        SymmetricGroup s15 = new SymmetricGroup(15);
+        CyclicGroup cMillion = new CyclicGroup(1_000_000);
+        FiniteGroup<Pair<Permutation, Integer>> hugeProduct = DirectProduct.finiteGroup(s15, cMillion);
+        assertThat(hugeProduct.order()).isEqualTo(s15.order().multiply(cMillion.order()));
+        assertThat(hugeProduct.isAbelian()).isFalse();
+        assertThat(hugeProduct.elements().stream().limit(5).toList()).hasSize(5);
     }
 }

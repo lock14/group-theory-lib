@@ -1,5 +1,6 @@
 package lock14.algebra.group;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -16,7 +17,7 @@ public final class Permutation implements GroupElement<Permutation> {
 
     private final int[] mapping;
 
-    private Permutation(int[] trustedMapping) {
+    Permutation(int[] trustedMapping) {
         this.mapping = trustedMapping;
     }
 
@@ -278,24 +279,14 @@ public final class Permutation implements GroupElement<Permutation> {
      * Computes the exact multiplicative order of this permutation (LCM of its disjoint cycle lengths).
      *
      * @return the smallest positive integer {@code k} such that {@code this^k} is the identity
-     * @throws ArithmeticException if the order overflows a 64-bit {@code long}
      */
-    public long order() {
-        long ord = 1L;
+    public BigInteger order() {
+        BigInteger ord = BigInteger.ONE;
         for (List<Integer> cycle : cycles()) {
-            long len = cycle.size();
-            ord = Math.multiplyExact(ord / gcd(ord, len), len);
+            BigInteger len = BigInteger.valueOf(cycle.size());
+            ord = ord.divide(ord.gcd(len)).multiply(len);
         }
         return ord;
-    }
-
-    private static long gcd(long a, long b) {
-        while (b != 0) {
-            long t = a % b;
-            a = b;
-            b = t;
-        }
-        return a;
     }
 
     @Override

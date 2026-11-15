@@ -42,6 +42,9 @@ public class ComplexTest extends FieldLaws<Complex<Rational>> {
         Complex<Rational> quot = gaussianRationals.divide(a, b);
         assertThat(quot).isEqualTo(Complex.ofRational(Rational.of(23, 41), Rational.of(2, 41)));
         assertThat(quot.multiply(b)).isEqualTo(a);
+        assertThat(a.reciprocal(Rationals.FIELD)).isEqualTo(gaussianRationals.reciprocal(a));
+        assertThat(a.tryReciprocal(Rationals.FIELD)).contains(gaussianRationals.reciprocal(a));
+        assertThat(gaussianRationals.zero().tryReciprocal(Rationals.FIELD)).isEmpty();
         assertThatThrownBy(() -> gaussianRationals.reciprocal(gaussianRationals.zero()))
             .isInstanceOf(NonInvertibleElementException.class);
 
@@ -54,5 +57,6 @@ public class ComplexTest extends FieldLaws<Complex<Rational>> {
         var f5 = ZMod.field(5);
         var c5 = Complex.of(f5, f5.one(), f5.one());
         assertThatThrownBy(() -> z.add(c5)).isInstanceOf(IncompatibleAlgebraException.class);
+        assertThatThrownBy(() -> z.reciprocal(f5)).isInstanceOf(IncompatibleAlgebraException.class);
     }
 }

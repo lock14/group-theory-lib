@@ -1,5 +1,6 @@
 package lock14.algebra.benchmarks;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +86,7 @@ public class GroupBenchmarks {
     }
 
     @Benchmark
-    public long burnsideConjugacyClassesS4() {
+    public BigInteger burnsideConjugacyClassesS4() {
         return conjugationS4.countOrbitsBurnside(s4, s4.elements());
     }
 }

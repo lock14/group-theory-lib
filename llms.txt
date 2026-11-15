@@ -46,12 +46,12 @@ var gf256 = GaloisFields.extension(2, 1, 1, 0, 1, 1, 0, 0, 0, 1);
 SquareMatrix<Rational> a = SquareMatrix.of(2, Rationals.FIELD,
     Rational.of(1), Rational.of(2),
     Rational.of(3), Rational.of(4));
-Vector<Rational> x = a.solve(Vector.of(Rationals.FIELD, Rational.of(5), Rational.of(11)));
+Vector<Rational> x = a.solve(Rationals.FIELD, Vector.of(Rationals.FIELD, Rational.of(5), Rational.of(11)));
 ```
 
 ## Core typeclasses
 
-- **Single-operation hierarchy**: `Magma<T>`, `Semigroup<T>`, `Monoid<T>`, `Group<T>`, `AbelianGroup<T>`, and `FiniteGroup<T>` in `lock14.algebra.structure` with binary `power`, `Collector`, and Java 25 `Gatherer` prefix scans (`scanGatherer()`).
+- **Single-operation hierarchy**: `Magma<T>`, `Semigroup<T>`, `Monoid<T>`, `Group<T>`, `AbelianGroup<T>`, and `FiniteGroup<T>` (`BigInteger` orders, `generators()`, lazy `elements()` views) in `lock14.algebra.structure` with binary `power`, `Collector`, and Java 25 `Gatherer` prefix scans (`scanGatherer()`).
 - **Ring and field hierarchy**: `Semiring<T>`, `Ring<T>`, `CommutativeRing<T>`, `IntegralDomain<T>`, `EuclideanDomain<T>`, and `Field<T>` with `divideAndRemainder`, `gcd`, and Bézout `extendedGcd`.
 - **Skew-fields**: `DivisionRing<T>` (`tryReciprocal`, `reciprocal`) unifying non-commutative `QuaternionDivisionRing` and commutative `Field`.
 - **Linear structures**: `LeftModule<M, R>` and `VectorSpace<V, F>` for scalar action over rings and fields.
@@ -61,20 +61,21 @@ Vector<Rational> x = a.solve(Vector.of(Rationals.FIELD, Rational.of(5), Rational
 
 - `lock14.algebra.structure`: Exact algebraic typeclasses, homomorphisms, and direct products.
 - `lock14.algebra.element`: Self-typed fluent element contracts (`GroupElement`, `RingElement`, `DivisionRingElement`, `FieldElement`, `ModuleElement`).
-- `lock14.algebra.exceptions`: Unchecked domain exceptions (`AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException`, `UndefinedOperationException`).
+- `lock14.algebra.exceptions`: Unchecked domain exceptions (`AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException`).
 - `lock14.algebra.group`: `Permutation`, `SymmetricGroup`, `AlternatingGroup`, `CyclicGroup`, `DihedralGroup`, `Subgroup`, `Coset`, `QuotientGroup`, and `GroupAction` (orbits, stabilizers, Burnside's lemma).
 - `lock14.algebra.numbers`: `Integers` (canonical least-non-negative Euclidean $\mathbb{Z}$), `Rational` and `Rationals` ($\mathbb{Q}$), `Complex<T>`, `ComplexRing<T>`, `GaussianIntegers` (Euclidean $\mathbb{Z}[i]$), `ComplexField<T>` ($\mathbb{Q}(i)$), `Quaternion<T>`, `QuaternionRing<T>`, and `QuaternionDivisionRing<T>` ($\mathbb{H}(\mathbb{Q})$).
 - `lock14.algebra.polynomial`: `Polynomial<T>`, `PolynomialRing<T>`, `NonCommutativePolynomialRing<T>`, and `PolynomialEuclideanDomain<T>` (monic long division, GCD, Horner evaluation, derivatives).
 - `lock14.algebra.quotient`: Universal Euclidean quotients `Residue<T>`, `QuotientRing<T>`, `QuotientField<T>`, `ZMod` ($\mathbb{Z}/n\mathbb{Z}$ and $\mathbb{F}_p$), and Rabin-verified `GaloisFields` ($GF(p^k)$).
 - `lock14.algebra.linear`: Sealed `Matrix<T>` (`SquareMatrix<T>`, `RectangularMatrix<T>`), `Vector<T>`, `CoordinateModule<T>`, `CoordinateVectorSpace<T>`, `MatrixRing<T>`, `RrefResult<T>` (`rref`, `rank`, `nullity`, `kernel`), and `LuDecomposition<T>` (`lu`, `solve`, `inverse`, `tryInverse`, `determinant`).
-- `lock14.algebra.numeric`: `NumericContext` (`ScopedValue` `EPSILON` and `MATH_CONTEXT`), `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64` (SLERP and 3D rotations), and off-heap FFM `Arena`-backed `Float64Matrix`.
+- `lock14.algebra.numeric`: `NumericContext` (`ScopedValue` `EPSILON` and `MATH_CONTEXT`), `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64` (SLERP and 3D rotations), and sealed off-heap FFM `Arena`-backed `Float64Matrix` (`Float64SquareMatrix`, `Float64RectangularMatrix`).
 
 ## Key design invariants
 
 - **Exact equality**: Core algebraic structures never use approximate floating-point tolerances; `equals` and `hashCode` reflect canonical mathematical equivalence (reduced rationals, trimmed polynomials, canonical cosets, least-non-negative Euclidean remainders).
+- **No refused bequests or fat interfaces**: Every exposed method is supported across all instances of its receiver; shape-specific and algebra-specific operations are partitioned at compile time via sealed matrix ADTs (`Matrix<T>`, `Float64Matrix`) and explicit scalar typeclass witnesses (`CommutativeRing<T>`, `DivisionRing<T>`, `Field<T>`), while `FiniteGroup` carriers expose lazy `Set` views and `BigInteger` orders.
 - **Explicit parent ownership**: Modular and parameterized elements carry their parent structure directly and throw `IncompatibleAlgebraException` on mismatched moduli, rings, or groups.
 - **Zero-copy encapsulation**: Backing arrays are never exposed directly; public factories validate and copy inputs while internal operations use package-private zero-copy constructors.
-- **Total and throwing inverses**: Partial inversions provide both `Optional`-returning `tryReciprocal` and `tryInverse` queries and `NonInvertibleElementException`-throwing `reciprocal` and `inverse` methods.
+- **Total singularity queries**: Partial operations provide both `Optional`-returning `tryReciprocal`, `tryInverse`, `tryLog`, and `tryPow` queries and `NonInvertibleElementException`- or `ArithmeticException`-throwing convenience methods.
 
 ## References
 

@@ -19,7 +19,7 @@ class NumbersExamplesTest {
         QuaternionDivisionRing<Rational> hq = QuaternionDivisionRing.overRationals();
         Quaternion<Rational> q = hq.of(
                 Rational.of(1), Rational.of(2), Rational.of(-1), Rational.of(3));
-        Quaternion<Rational> inv = q.reciprocal();
+        Quaternion<Rational> inv = hq.reciprocal(q);
         // @end
 
         assertThat(a.multiply(bezout.x()).add(b.multiply(bezout.y()))).isEqualTo(bezout.gcd());

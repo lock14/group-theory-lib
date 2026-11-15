@@ -1,7 +1,6 @@
 package lock14.algebra.numeric;
 
 import lock14.algebra.exceptions.NonInvertibleElementException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.laws.ApproximateFieldLaws;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -47,10 +46,15 @@ public class Complex64Test extends ApproximateFieldLaws<Complex64> {
         Complex64 rootI = Complex64.I.sqrt();
         assertThat(rootI.multiply(rootI).approxEquals(Complex64.I, 1e-12)).isTrue();
 
+        assertThat(Complex64.ZERO.tryLog()).isEmpty();
+        assertThat(Complex64.ONE.tryLog()).contains(Complex64.ZERO);
+        assertThatThrownBy(Complex64.ZERO::log).isInstanceOf(ArithmeticException.class);
+
         assertThat(Complex64.ZERO.pow(Complex64.ZERO)).isEqualTo(Complex64.ONE);
         assertThat(Complex64.ZERO.pow(Complex64.of(2.0, 3.0))).isEqualTo(Complex64.ZERO);
+        assertThat(Complex64.ZERO.tryPow(Complex64.I)).isEmpty();
         assertThatThrownBy(() -> Complex64.ZERO.pow(Complex64.I))
-            .isInstanceOf(UndefinedOperationException.class);
+            .isInstanceOf(ArithmeticException.class);
         assertThatThrownBy(() -> Complex64.ONE.divide(Complex64.ZERO))
             .isInstanceOf(NonInvertibleElementException.class);
 

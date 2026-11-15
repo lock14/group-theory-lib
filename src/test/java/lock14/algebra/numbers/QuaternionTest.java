@@ -48,10 +48,12 @@ public class QuaternionTest extends DivisionRingLaws<Quaternion<Rational>> {
         // Exact rational reciprocal without any floating-point rounding!
         Quaternion<Rational> q = Quaternion.ofRational(1, 2, 3, 4);
         assertThat(q.normSq()).isEqualTo(Rational.of(30));
-        assertThat(q.multiply(q.reciprocal())).isEqualTo(hq.one());
-        assertThat(q.reciprocal().multiply(q)).isEqualTo(hq.one());
+        assertThat(q.multiply(q.reciprocal(Rationals.FIELD))).isEqualTo(hq.one());
+        assertThat(q.reciprocal(Rationals.FIELD).multiply(q)).isEqualTo(hq.one());
+        assertThat(q.tryReciprocal(Rationals.FIELD)).contains(hq.reciprocal(q));
+        assertThat(hq.zero().tryReciprocal(Rationals.FIELD)).isEmpty();
 
-        // Lipschitz integer quaternions over Z
+        // Lipschitz integer quaternions over Z (Ring without division; reciprocal is unavailable at compile time)
         QuaternionRing<BigInteger> lipschitz = new QuaternionRing<>(Integers.RING);
         Quaternion<BigInteger> a = lipschitz.of(
             BigInteger.ONE, BigInteger.TWO, BigInteger.ZERO, BigInteger.valueOf(-1)
@@ -60,7 +62,6 @@ public class QuaternionTest extends DivisionRingLaws<Quaternion<Rational>> {
             BigInteger.ZERO, BigInteger.ONE, BigInteger.valueOf(3), BigInteger.ONE
         );
         assertThat(lipschitz.multiply(a, b)).isNotEqualTo(lipschitz.multiply(b, a));
-        assertThat(lipschitz.isUnit(lipschitz.i())).isTrue();
-        assertThat(lipschitz.isUnit(a)).isFalse();
+        assertThat(lipschitz.i().normSq()).isEqualTo(BigInteger.ONE);
     }
 }

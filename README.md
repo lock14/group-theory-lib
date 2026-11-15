@@ -32,7 +32,8 @@ cd group-theory-lib
 ## Architectural pillars
 
 *   **Exact core hierarchy**: Every `Group`, `Ring`, `IntegralDomain`, `EuclideanDomain`, `DivisionRing`, and `Field` implementation in `lock14.algebra.structure` satisfies its algebraic axioms under exact mathematical equality—never compromised by IEEE-754 rounding or underflow zero divisors.
-*   **Explicit numerical and off-heap layer**: Floating-point approximations (`ApproximateField`, `Float64Field`, `Complex64`, `Quaternion64`) and off-heap Foreign Function and Memory matrices (`Float64Matrix`) live in `lock14.algebra.numeric` with `ScopedValue`-configured tolerances (`NumericContext.EPSILON`).
+*   **Explicit numerical and off-heap layer**: Floating-point approximations (`ApproximateField`, `Float64Field`, `Complex64`, `Quaternion64`) and off-heap Foreign Function and Memory matrices (`Float64Matrix`, `Float64SquareMatrix`, `Float64RectangularMatrix`) live in `lock14.algebra.numeric` with `ScopedValue`-configured tolerances (`NumericContext.EPSILON`).
+*   **Compile-time interface segregation**: Sealed matrix sum types (`Matrix<T>` and `Float64Matrix`), explicit scalar typeclass witnesses (`CommutativeRing<T>`, `DivisionRing<T>`, `Field<T>`), and lazy `FiniteGroup<T>` element views ensure every exposed method is supported across all instances without runtime capability exceptions.
 *   **Universal constructions**: Build quotient groups $G/N$, direct products $G \times H$ and $R \times S$, group actions (orbits, stabilizers, Burnside's lemma), and universal Euclidean quotient rings and fields $E/(m)$ unifying $\mathbb{Z}/n\mathbb{Z}$, $\mathbb{F}_p$, and Galois extension fields $GF(p^k) = \mathbb{F}_p[x]/(f(x))$.
 *   **Encapsulated zero-copy value carriers**: `Permutation`, `Polynomial<T>`, `Vector<T>`, `RectangularMatrix<T>`, and `SquareMatrix<T>` encapsulate backing storage behind package-private zero-copy constructors, preventing array aliasing and redundant cloning during arithmetic.
 
@@ -50,7 +51,7 @@ Subgroup<Permutation> v4 = Subgroup.of(s4, Set.of(
 ));
 
 QuotientGroup<Permutation> quotient = QuotientGroup.of(s4, v4); // order 6, non-abelian
-long conjugacyClasses = GroupAction.conjugation(s4).countOrbitsBurnside(s4, s4.elements()); // 5
+BigInteger conjugacyClasses = GroupAction.conjugation(s4).countOrbitsBurnside(s4, s4.elements()); // 5
 ```
 
 ### Universal quotients and Galois extension fields $GF(2^8)$
@@ -73,19 +74,19 @@ SquareMatrix<Rational> a = SquareMatrix.of(2, Rationals.FIELD,
     Rational.of(3), Rational.of(4));
 Vector<Rational> b = Vector.of(Rationals.FIELD, Rational.of(5), Rational.of(11));
 
-Vector<Rational> x = a.solve(b); // [1, 2]
-LuDecomposition<Rational> lu = a.lu(); // P * A == L * U
+Vector<Rational> x = a.solve(Rationals.FIELD, b); // [1, 2]
+LuDecomposition<Rational> lu = a.lu(Rationals.FIELD); // P * A == L * U
 
 Matrix<Rational> rect = Matrix.of(2, 4, Rationals.FIELD,
     Rational.of(1), Rational.of(2), Rational.of(0), Rational.of(3),
     Rational.of(0), Rational.of(0), Rational.of(1), Rational.of(-1));
-List<Vector<Rational>> nullspaceBasis = rect.kernel(); // 2 basis vectors satisfying rect * v == 0
+List<Vector<Rational>> nullspaceBasis = rect.kernel(Rationals.FIELD); // 2 basis vectors satisfying rect * v == 0
 ```
 
-### Off-heap FFM `Float64Matrix` and scoped numerical tolerance
+### Off-heap FFM `Float64SquareMatrix` and scoped numerical tolerance
 
 ```java
-try (Float64Matrix m = Float64Matrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}})) {
+try (Float64SquareMatrix m = Float64SquareMatrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}})) {
     double[] solution = ScopedValue.where(NumericContext.EPSILON, 1e-12)
         .call(() -> m.solve(new double[]{1.0, 2.0})); // [1.0, 1.0] via partial pivoting
 }
@@ -97,13 +98,13 @@ try (Float64Matrix m = Float64Matrix.of(new double[][]{{1e-20, 1.0}, {1.0, 1.0}}
 | :--- | :--- | :--- |
 | `lock14.algebra.structure` | `Group`, `FiniteGroup`, `Ring`, `EuclideanDomain`, `DivisionRing`, `Field`, `LeftModule`, `VectorSpace`, `DirectProduct`, `GroupHomomorphism`, `RingHomomorphism` | Exact algebraic typeclass hierarchy, zero-allocation binary exponentiation, Java 25 `Gatherer` scans, direct products, and morphisms |
 | `lock14.algebra.element` | `GroupElement`, `RingElement`, `DivisionRingElement`, `FieldElement`, `ModuleElement` | Self-typed fluent element interfaces enabling natural arithmetic expressions (`a.add(b)`, `x.reciprocal()`) |
-| `lock14.algebra.exceptions` | `AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException`, `UndefinedOperationException` | Unchecked domain exception hierarchy for invalid algebraic and linear operations |
-| `lock14.algebra.group` | `Permutation`, `SymmetricGroup`, `AlternatingGroup`, `CyclicGroup`, `DihedralGroup`, `Subgroup`, `Coset`, `QuotientGroup`, `GroupAction` | Finite groups ($S_n, A_n, C_n, D_n$), normal subgroup verification, quotient groups $G/N$, Orbit-Stabilizer, and Burnside's lemma |
+| `lock14.algebra.exceptions` | `AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException` | Unchecked domain exception hierarchy for invalid algebraic and linear operations |
+| `lock14.algebra.group` | `Permutation`, `SymmetricGroup`, `AlternatingGroup`, `CyclicGroup`, `DihedralGroup`, `Subgroup`, `Coset`, `QuotientGroup`, `GroupAction` | Lazy finite groups ($S_n, A_n, C_n, D_n$) with `BigInteger` orders, normal subgroup verification, quotient groups $G/N$, Orbit-Stabilizer, and Burnside's lemma |
 | `lock14.algebra.numbers` | `Integers`, `Rational`, `Rationals`, `Complex<T>`, `GaussianIntegers`, `ComplexField<T>`, `Quaternion<T>`, `QuaternionRing<T>`, `QuaternionDivisionRing<T>` | Canonical least-non-negative Euclidean $\mathbb{Z}$, exact $\mathbb{Q}$, Euclidean Gaussian integers $\mathbb{Z}[i]$, $\mathbb{Q}(i)$, and exact division ring $\mathbb{H}(\mathbb{Q})$ |
 | `lock14.algebra.polynomial` | `Polynomial<T>`, `PolynomialRing<T>`, `NonCommutativePolynomialRing<T>`, `PolynomialEuclideanDomain<T>` | Univariate polynomials over commutative and non-commutative rings, monic Euclidean long division, Bézout GCD, Horner evaluation, and formal derivatives |
 | `lock14.algebra.quotient` | `Residue<T>`, `QuotientRing<T>`, `QuotientField<T>`, `ZMod`, `GaloisFields` | Universal quotients $E/(m)$, $\mathbb{Z}/n\mathbb{Z}$, $\mathbb{F}_p$, and Rabin-verified finite extension fields $GF(p^k)$ (including AES $GF(2^8)$) |
-| `lock14.algebra.linear` | `Matrix<T>`, `SquareMatrix<T>`, `RectangularMatrix<T>`, `Vector<T>`, `LuDecomposition<T>`, `RrefResult<T>`, `MatrixRing<T>` | Disjoint sealed `Matrix<T>` ADT, `rref()`, `rank()`, `nullity()`, right `kernel()` basis, $PA = LU$, `solve()`, and Bareiss and Bird determinants |
-| `lock14.algebra.numeric` | `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64`, `Float64Matrix`, `NumericContext` | Smith-scaled `Complex64`, 3D axis-angle and SLERP `Quaternion64`, and FFM `Arena`-backed `Float64Matrix` with partial-pivoted `solve()` |
+| `lock14.algebra.linear` | `Matrix<T>`, `SquareMatrix<T>`, `RectangularMatrix<T>`, `Vector<T>`, `LuDecomposition<T>`, `RrefResult<T>`, `MatrixRing<T>` | Disjoint sealed `Matrix<T>` ADT, `rref`, `rank`, `nullity`, right `kernel` basis, $PA = LU$, `solve`, and Bareiss and Bird determinants |
+| `lock14.algebra.numeric` | `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64`, `Float64Matrix`, `Float64SquareMatrix`, `Float64RectangularMatrix`, `NumericContext` | Smith-scaled `Complex64`, 3D axis-angle and SLERP `Quaternion64`, and sealed FFM `Arena`-backed `Float64Matrix` hierarchy with partial-pivoted `solve` |
 
 ## Benchmarks
 

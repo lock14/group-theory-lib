@@ -1,6 +1,7 @@
 package lock14.algebra.numbers;
 
 import java.util.Objects;
+import java.util.Optional;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.structure.Field;
 
@@ -89,9 +90,15 @@ public record ComplexField<T>(Field<T> scalarField) implements Field<Complex<T>>
     }
 
     @Override
+    public Optional<Complex<T>> tryReciprocal(Complex<T> a) {
+        checkInField(a);
+        return a.tryReciprocal(scalarField);
+    }
+
+    @Override
     public Complex<T> reciprocal(Complex<T> a) {
         checkInField(a);
-        return a.reciprocal();
+        return a.reciprocal(scalarField);
     }
 
     @Override

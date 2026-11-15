@@ -1,5 +1,6 @@
 package lock14.algebra.group;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -117,12 +118,12 @@ public final class Subgroup<T> implements FiniteGroup<T> {
     }
 
     /**
-     * Returns the index {@code [G : H] = |G| / |H|} by Lagrange's theorem.
+     * Returns the exact index {@code [G : H] = |G| / |H|} by Lagrange's theorem.
      *
      * @return the index of this subgroup in its parent group
      */
-    public long index() {
-        return parentGroup.order() / order();
+    public BigInteger index() {
+        return parentGroup.order().divide(order());
     }
 
     /**
@@ -131,9 +132,11 @@ public final class Subgroup<T> implements FiniteGroup<T> {
      * @return {@code true} if {@code H} is normal in {@code G}, {@code false} otherwise
      */
     public boolean isNormal() {
-        for (T g : parentGroup.elements()) {
+        for (T g : parentGroup.generators()) {
+            T gInv = parentGroup.inverse(g);
             for (T h : carrier) {
-                if (!carrier.contains(parentGroup.conjugate(g, h))) {
+                if (!carrier.contains(parentGroup.conjugate(g, h))
+                        || !carrier.contains(parentGroup.conjugate(gInv, h))) {
                     return false;
                 }
             }

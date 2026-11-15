@@ -14,8 +14,6 @@
  *       to invert zero, a non-unit ring element, or a singular matrix.</li>
  *   <li>{@link lock14.algebra.exceptions.DimensionMismatchException} &mdash; thrown when vector or
  *       matrix dimensions violate operation compatibility constraints.</li>
- *   <li>{@link lock14.algebra.exceptions.UndefinedOperationException} &mdash; thrown when an operation
- *       is mathematically undefined over the governing algebraic structure.</li>
  * </ul>
  */
 package lock14.algebra.exceptions;

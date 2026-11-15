@@ -2,6 +2,7 @@ package lock14.algebra.structure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigInteger;
 import java.util.List;
 import lock14.algebra.group.CyclicGroup;
 import lock14.algebra.group.Permutation;
@@ -23,8 +24,8 @@ class StructureExamplesTest {
                 .toList();
         // @end
 
-        assertThat(product.order()).isEqualTo(18L);
-        assertThat(product.elementOrder(g)).isEqualTo(6L);
+        assertThat(product.order()).isEqualTo(BigInteger.valueOf(18));
+        assertThat(product.elementOrder(g)).isEqualTo(BigInteger.valueOf(6));
         assertThat(prefixes).hasSize(3);
         assertThat(prefixes.get(2)).isEqualTo(Pair.of(0, Permutation.transposition(3, 0, 1)));
     }

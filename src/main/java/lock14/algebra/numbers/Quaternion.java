@@ -5,10 +5,8 @@ import java.util.Optional;
 import lock14.algebra.element.RingElement;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.exceptions.NonInvertibleElementException;
-import lock14.algebra.exceptions.UndefinedOperationException;
 import lock14.algebra.structure.CommutativeRing;
 import lock14.algebra.structure.Field;
-import lock14.algebra.structure.IntegralDomain;
 
 /**
  * Exact Hamilton Quaternion {@code w + x*i + y*j + z*k} parameterized over any {@link CommutativeRing} {@code T}
@@ -204,43 +202,39 @@ public record Quaternion<T>(T w, T x, T y, T z, CommutativeRing<T> scalarRing)
     }
 
     /**
-     * Computes the exact multiplicative inverse {@code conjugate() / normSq()}.
+     * Computes the exact multiplicative inverse {@code conjugate() / normSq()} over {@code scalarField}.
      *
+     * @param scalarField the governing scalar {@link Field} matching {@link #scalarRing()}
      * @return the multiplicative inverse {@code this^-1}
-     * @throws NonInvertibleElementException if this quaternion is not invertible
-     * @throws UndefinedOperationException   if {@code scalarRing} cannot invert a non-trivial unit norm
+     * @throws IncompatibleAlgebraException  if {@code scalarField} does not match {@link #scalarRing()}
+     * @throws NonInvertibleElementException if {@code normSq()} is zero in {@code scalarField}
      */
-    public Quaternion<T> reciprocal() {
-        return tryReciprocal().orElseThrow(
+    public Quaternion<T> reciprocal(Field<T> scalarField) {
+        return tryReciprocal(scalarField).orElseThrow(
             () -> new NonInvertibleElementException("Quaternion element is not invertible: " + this)
         );
     }
 
     /**
-     * Attempts to compute the exact multiplicative inverse of this quaternion.
+     * Attempts to compute the exact multiplicative inverse of this quaternion over {@code scalarField}.
      *
-     * @return an {@link Optional} containing {@code this^-1} if invertible, or {@link Optional#empty()} if non-invertible
-     * @throws UndefinedOperationException if {@code scalarRing} is not a {@link Field} and {@code normSq()} is a unit other than {@code +/-1}
+     * @param scalarField the governing scalar {@link Field} matching {@link #scalarRing()}
+     * @return an {@link Optional} containing {@code this^-1} if invertible, or {@link Optional#empty()} if {@code normSq()} is zero
+     * @throws IncompatibleAlgebraException if {@code scalarField} does not match {@link #scalarRing()}
      */
-    public Optional<Quaternion<T>> tryReciprocal() {
+    public Optional<Quaternion<T>> tryReciprocal(Field<T> scalarField) {
+        Objects.requireNonNull(scalarField, "scalarField cannot be null");
+        if (!Objects.equals(this.scalarRing, scalarField)) {
+            throw new IncompatibleAlgebraException(
+                "Quaternion scalar ring " + this.scalarRing + " does not match field " + scalarField
+            );
+        }
         T nSq = normSq();
-        if (scalarRing instanceof Field<T> field) {
-            if (field.isZero(nSq)) {
-                return Optional.empty();
-            }
-            T invNorm = field.reciprocal(nSq);
-            return Optional.of(conjugate().scale(invNorm));
-        }
-        if (scalarRing.isOne(nSq)) {
-            return Optional.of(conjugate());
-        }
-        if (scalarRing.isOne(scalarRing.negate(nSq))) {
-            return Optional.of(conjugate().negate());
-        }
-        if (scalarRing instanceof IntegralDomain<T> domain && !domain.isUnit(nSq)) {
+        if (scalarField.isZero(nSq)) {
             return Optional.empty();
         }
-        throw new UndefinedOperationException("General quaternion reciprocal requires a scalar Field");
+        T invNorm = scalarField.reciprocal(nSq);
+        return Optional.of(conjugate().scale(invNorm));
     }
 
     private void checkSameRing(Quaternion<T> other) {

@@ -3,6 +3,7 @@ package lock14.algebra.benchmarks;
 import java.lang.foreign.Arena;
 import java.util.concurrent.TimeUnit;
 import lock14.algebra.numeric.Float64Matrix;
+import lock14.algebra.numeric.Float64SquareMatrix;
 import lock14.algebra.numeric.Quaternion64;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -32,8 +33,8 @@ public class NumericBenchmarks {
     private static final int MATRIX_DIM = 64;
 
     private Arena arena;
-    private Float64Matrix mat64A;
-    private Float64Matrix mat64B;
+    private Float64SquareMatrix mat64A;
+    private Float64SquareMatrix mat64B;
     private double[] rhs64;
     private Quaternion64 rotStart;
     private Quaternion64 rotEnd;
@@ -41,8 +42,8 @@ public class NumericBenchmarks {
     @Setup(Level.Trial)
     public void setUp() {
         arena = Arena.ofConfined();
-        mat64A = new Float64Matrix(MATRIX_DIM, MATRIX_DIM, arena);
-        mat64B = new Float64Matrix(MATRIX_DIM, MATRIX_DIM, arena);
+        mat64A = new Float64SquareMatrix(MATRIX_DIM, arena);
+        mat64B = new Float64SquareMatrix(MATRIX_DIM, arena);
         rhs64 = new double[MATRIX_DIM];
 
         for (int r = 0; r < MATRIX_DIM; r++) {

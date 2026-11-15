@@ -1,5 +1,6 @@
 package lock14.algebra.group;
 
+import java.math.BigInteger;
 import lock14.algebra.laws.FiniteGroupLaws;
 import lock14.algebra.structure.FiniteGroup;
 import net.jqwik.api.Arbitraries;
@@ -24,8 +25,8 @@ public class DihedralGroupTest extends FiniteGroupLaws<DihedralGroup.Element> {
     }
 
     @Test
-    public void testPresentationRelationsAndCenter() {
-        assertThat(d6.order()).isEqualTo(12L);
+    public void testPresentationRelationsCenterAndLazyLargePolygon() {
+        assertThat(d6.order()).isEqualTo(BigInteger.valueOf(12));
         assertThat(d6.isAbelian()).isFalse();
 
         DihedralGroup.Element r = d6.rotationGenerator();
@@ -38,5 +39,10 @@ public class DihedralGroupTest extends FiniteGroupLaws<DihedralGroup.Element> {
 
         // D_2 (Klein 4-group) is abelian
         assertThat(new DihedralGroup(2).isAbelian()).isTrue();
+
+        DihedralGroup dHuge = new DihedralGroup(1_000_000_000);
+        assertThat(dHuge.order()).isEqualTo(BigInteger.valueOf(2_000_000_000L));
+        assertThat(dHuge.isAbelian()).isFalse();
+        assertThat(dHuge.elements().stream().limit(3).toList()).hasSize(3);
     }
 }

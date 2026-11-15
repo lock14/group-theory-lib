@@ -81,16 +81,16 @@ public class LinearBenchmarks {
 
     @Benchmark
     public Rational determinant8x8OverQ() {
-        return matA.determinant();
+        return matA.determinant(Rationals.FIELD);
     }
 
     @Benchmark
     public Vector<Rational> luSolve8x8OverQ() {
-        return matA.solve(rhs8);
+        return matA.solve(Rationals.FIELD, rhs8);
     }
 
     @Benchmark
     public RrefResult<Rational> rref8x12OverQ() {
-        return rect8x12.rref();
+        return rect8x12.rref(Rationals.FIELD);
     }
 }

@@ -1,6 +1,9 @@
 package lock14.algebra.group;
 
+import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
@@ -17,11 +20,17 @@ public final class QuotientGroup<T> implements FiniteGroup<Coset<T>> {
     private final FiniteGroup<T> parentGroup;
     private final Subgroup<T> normalSubgroup;
     private final Set<Coset<T>> cosets;
+    private final List<Coset<T>> generators;
 
-    private QuotientGroup(FiniteGroup<T> parentGroup, Subgroup<T> normalSubgroup, Set<Coset<T>> cosets) {
+    private QuotientGroup(
+            FiniteGroup<T> parentGroup,
+            Subgroup<T> normalSubgroup,
+            Set<Coset<T>> cosets,
+            List<Coset<T>> generators) {
         this.parentGroup = parentGroup;
         this.normalSubgroup = normalSubgroup;
         this.cosets = cosets;
+        this.generators = generators;
     }
 
     /**
@@ -43,11 +52,33 @@ public final class QuotientGroup<T> implements FiniteGroup<Coset<T>> {
         if (!normalSubgroup.isNormal()) {
             throw new IllegalArgumentException("Subgroup is not normal in " + parentGroup + "; cannot form quotient group G/N");
         }
+        Collection<T> parentGenerators = parentGroup.generators();
+        Coset<T> idCoset = normalSubgroup.leftCoset(parentGroup.identity());
         Set<Coset<T>> allCosets = new LinkedHashSet<>();
-        for (T g : parentGroup.elements()) {
-            allCosets.add(normalSubgroup.leftCoset(g));
+        allCosets.add(idCoset);
+        ArrayDeque<Coset<T>> queue = new ArrayDeque<>();
+        queue.add(idCoset);
+        while (!queue.isEmpty()) {
+            Coset<T> current = queue.removeFirst();
+            for (T gen : parentGenerators) {
+                Coset<T> next = normalSubgroup.leftCoset(parentGroup.combine(current.representative(), gen));
+                if (allCosets.add(next)) {
+                    queue.addLast(next);
+                }
+            }
         }
-        return new QuotientGroup<>(parentGroup, normalSubgroup, Set.copyOf(allCosets));
+        Set<Coset<T>> projectedGenerators = new LinkedHashSet<>();
+        for (T gen : parentGenerators) {
+            Coset<T> projected = normalSubgroup.leftCoset(gen);
+            if (!projected.equals(idCoset)) {
+                projectedGenerators.add(projected);
+            }
+        }
+        return new QuotientGroup<>(
+            parentGroup,
+            normalSubgroup,
+            Set.copyOf(allCosets),
+            List.copyOf(projectedGenerators));
     }
 
     /**
@@ -80,6 +111,11 @@ public final class QuotientGroup<T> implements FiniteGroup<Coset<T>> {
     @Override
     public Set<Coset<T>> elements() {
         return cosets;
+    }
+
+    @Override
+    public Collection<Coset<T>> generators() {
+        return generators;
     }
 
     @Override
