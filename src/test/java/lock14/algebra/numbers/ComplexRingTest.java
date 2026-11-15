@@ -1,6 +1,7 @@
 package lock14.algebra.numbers;
 
 import java.math.BigInteger;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.laws.CommutativeRingLaws;
 import lock14.algebra.quotient.QuotientRing;
 import lock14.algebra.quotient.Residue;
@@ -11,6 +12,7 @@ import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ComplexRingTest extends CommutativeRingLaws<Complex<Residue<BigInteger>>> {
 
@@ -29,9 +31,14 @@ public class ComplexRingTest extends CommutativeRingLaws<Complex<Residue<BigInte
     }
 
     @Test
-    public void testImaginaryUnitSquaredIsMinusOne() {
+    public void testImaginaryUnitSquaredIsMinusOneAndRingGuard() {
         assertThat(z6i.multiply(z6i.i(), z6i.i())).isEqualTo(z6i.negate(z6i.one()));
         assertThat(z6i.isOne(z6i.one())).isTrue();
         assertThat(z6i.isZero(z6i.zero())).isTrue();
+
+        QuotientRing<BigInteger> z5 = ZMod.ring(5);
+        Complex<Residue<BigInteger>> foreign = Complex.of(z5, z5.one(), z5.zero());
+        assertThatThrownBy(() -> z6i.add(z6i.one(), foreign))
+            .isInstanceOf(IncompatibleAlgebraException.class);
     }
 }

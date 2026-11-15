@@ -44,9 +44,24 @@ public class ComplexTest extends FieldLaws<Complex<Rational>> {
         assertThat(quot.multiply(b)).isEqualTo(a);
         assertThat(a.reciprocal(Rationals.FIELD)).isEqualTo(gaussianRationals.reciprocal(a));
         assertThat(a.tryReciprocal(Rationals.FIELD)).contains(gaussianRationals.reciprocal(a));
+        assertThat(gaussianRationals.tryReciprocal(a)).contains(gaussianRationals.reciprocal(a));
+        assertThat(gaussianRationals.tryReciprocal(gaussianRationals.zero())).isEmpty();
         assertThat(gaussianRationals.zero().tryReciprocal(Rationals.FIELD)).isEmpty();
         assertThatThrownBy(() -> gaussianRationals.reciprocal(gaussianRationals.zero()))
             .isInstanceOf(NonInvertibleElementException.class);
+
+        assertThat(gaussianRationals.i()).isEqualTo(Complex.ofRational(0, 1));
+        assertThat(Complex.real(Rationals.FIELD, Rational.of(5))).isEqualTo(Complex.ofRational(5, 0));
+        assertThat(a.scale(Rational.of(3))).isEqualTo(Complex.ofRational(6, 9));
+
+        assertThat(Complex.ofRational(1, 0).isOne()).isTrue();
+        assertThat(Complex.ofRational(0, 0).isOne()).isFalse();
+        assertThat(Complex.ofRational(1, 2).isOne()).isFalse();
+
+        assertThat(Complex.ofRational(5, 0).toString()).isEqualTo("5");
+        assertThat(Complex.ofRational(0, 1).toString()).isEqualTo("i");
+        assertThat(Complex.ofRational(0, 3).toString()).isEqualTo("3i");
+        assertThat(Complex.ofRational(2, 3).toString()).isEqualTo("2 + 3i");
 
         // Over F_3 (since 3 = 3 mod 4, -1 is a quadratic non-residue), ComplexField(F_3) is GF(9)!
         var f3 = ZMod.field(3);
@@ -58,5 +73,6 @@ public class ComplexTest extends FieldLaws<Complex<Rational>> {
         var c5 = Complex.of(f5, f5.one(), f5.one());
         assertThatThrownBy(() -> z.add(c5)).isInstanceOf(IncompatibleAlgebraException.class);
         assertThatThrownBy(() -> z.reciprocal(f5)).isInstanceOf(IncompatibleAlgebraException.class);
+        assertThatThrownBy(() -> gf9.add(z, c5)).isInstanceOf(IncompatibleAlgebraException.class);
     }
 }

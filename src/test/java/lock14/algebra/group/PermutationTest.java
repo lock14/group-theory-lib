@@ -37,8 +37,16 @@ public class PermutationTest extends GroupLaws<Permutation> {
         assertThat(p.sign()).isEqualTo(-1);
         assertThat(p.isOdd()).isTrue();
         assertThat(p.isEven()).isFalse();
+        assertThat(Permutation.identity(5).isOdd()).isFalse();
         assertThat(s5.power(p, 6)).isEqualTo(Permutation.identity(5));
         assertThat(p.cycles()).containsExactly(List.of(0, 1), List.of(2, 3, 4));
+        assertThat(p.toString()).isEqualTo("(0 1)(2 3 4)");
+        assertThat(Permutation.identity(5).toString()).isEqualTo("(id)");
+
+        // Empty cycle inside cycles list is ignored as the identity
+        Permutation skippedEmpty = Permutation.fromCycles(3, List.of(List.of(), List.of(0, 1)));
+        assertThat(skippedEmpty).isEqualTo(Permutation.transposition(3, 0, 1));
+        assertThat(Permutation.transposition(3, 1, 1)).isEqualTo(Permutation.identity(3));
 
         // Disjoint prime-length cycles whose LCM exceeds Long.MAX_VALUE
         int[] primes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
@@ -71,11 +79,53 @@ public class PermutationTest extends GroupLaws<Permutation> {
         assertThat(p.apply(0)).isEqualTo(1);
         assertThat(p.toList()).containsExactly(1, 2, 0);
 
+        assertThatThrownBy(Permutation::of)
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Permutation.of(-1, 0))
+            .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Permutation.of(0, 0, 2))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Permutation.of(0, 3, 1))
             .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> Permutation.identity(0))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> Permutation.transposition(0, 0, 0))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Permutation.transposition(3, -1, 0))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.transposition(3, 3, 0))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.transposition(3, 0, -1))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.transposition(3, 0, 3))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+
+        assertThatThrownBy(() -> Permutation.fromCycles(0, List.of()))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Permutation.fromCycles(3, List.of(List.of(-1, 0))))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.fromCycles(3, List.of(List.of(3, 0))))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.fromCycles(3, List.of(List.of(0, -1))))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.fromCycles(3, List.of(List.of(0, 3))))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> Permutation.fromCycles(3, List.of(List.of(0, 1, 0))))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> p.apply(-1))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> p.apply(3))
+            .isInstanceOf(IndexOutOfBoundsException.class);
         assertThatThrownBy(() -> p.combine(Permutation.identity(4)))
             .isInstanceOf(IncompatibleAlgebraException.class);
+
+        Permutation pCopy = Permutation.of(1, 2, 0);
+        assertThat(p).isEqualTo(pCopy);
+        assertThat(p).hasSameHashCodeAs(pCopy);
+        assertThat(p.equals("not a permutation")).isFalse();
+        assertThat(p.equals(null)).isFalse();
     }
 }

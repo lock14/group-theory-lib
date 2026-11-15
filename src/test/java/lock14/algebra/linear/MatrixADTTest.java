@@ -26,6 +26,8 @@ public class MatrixADTTest {
 
         assertThat(square).isInstanceOf(SquareMatrix.class);
         assertThat(rect).isInstanceOf(RectangularMatrix.class);
+        assertThat(square.isSquare()).isTrue();
+        assertThat(rect.isSquare()).isFalse();
         assertThat(classifyMatrix(square)).isEqualTo("Square 3x3");
         assertThat(classifyMatrix(rect)).isEqualTo("Rectangular 2x4");
 
@@ -35,7 +37,12 @@ public class MatrixADTTest {
         assertThat(subSq).isInstanceOf(SquareMatrix.class);
         assertThat(subRect).isInstanceOf(RectangularMatrix.class);
 
-        // Square dimensions passed to RectangularMatrix.of are rejected
+        Matrix<Rational> fromSqToSq = square.submatrix(0, 2, 0, 2);
+        Matrix<Rational> fromSqToRect = square.submatrix(0, 2, 0, 3);
+        assertThat(fromSqToSq).isInstanceOf(SquareMatrix.class);
+        assertThat(fromSqToRect).isInstanceOf(RectangularMatrix.class);
+
+        // Square dimensions passed to RectangularMatrix.zeros are rejected
         assertThatThrownBy(() -> RectangularMatrix.zeros(2, 2, Rationals.FIELD))
             .isInstanceOf(IllegalArgumentException.class);
     }
@@ -45,6 +52,76 @@ public class MatrixADTTest {
             case SquareMatrix<?> sm -> "Square " + sm.dimension() + "x" + sm.dimension();
             case RectangularMatrix<?> rm -> "Rectangular " + rm.rows() + "x" + rm.cols();
         };
+    }
+
+    @Test
+    public void testMatrixStaticFactoriesDefaultVectorsAndSubmatrixBounds() {
+        var f = Rationals.FIELD;
+
+        Matrix<Rational> sqVarargs = Matrix.of(2, 2, f,
+            Rational.ONE, Rational.TWO,
+            Rational.of(3), Rational.of(4));
+        Matrix<Rational> rectVarargs = Matrix.of(2, 3, f,
+            Rational.ONE, Rational.TWO, Rational.of(3),
+            Rational.of(4), Rational.of(5), Rational.of(6));
+        assertThat(sqVarargs).isInstanceOf(SquareMatrix.class);
+        assertThat(rectVarargs).isInstanceOf(RectangularMatrix.class);
+
+        assertThat(sqVarargs.rowVector(1)).isEqualTo(Vector.of(f, Rational.of(3), Rational.of(4)));
+        assertThat(sqVarargs.colVector(0)).isEqualTo(Vector.of(f, Rational.ONE, Rational.of(3)));
+        assertThat(rectVarargs.rowVector(0)).isEqualTo(Vector.of(f, Rational.ONE, Rational.TWO, Rational.of(3)));
+        assertThat(rectVarargs.colVector(2)).isEqualTo(Vector.of(f, Rational.of(3), Rational.of(6)));
+
+        Matrix<Rational> sq2D = Matrix.of(f, new Rational[][] {
+            {Rational.ONE, Rational.TWO},
+            {Rational.of(3), Rational.of(4)}
+        });
+        Matrix<Rational> rect2D = Matrix.of(f, new Rational[][] {
+            {Rational.ONE, Rational.TWO, Rational.of(3)},
+            {Rational.of(4), Rational.of(5), Rational.of(6)}
+        });
+        assertThat(sq2D).isEqualTo(sqVarargs);
+        assertThat(rect2D).isEqualTo(rectVarargs);
+        assertThat(Matrix.identity(2, f)).isEqualTo(SquareMatrix.identity(2, f));
+
+        assertThatThrownBy(() -> Matrix.of(0, 2, f)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.of(-1, 2, f)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.of(2, 0, f)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.of(2, -1, f)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> Matrix.of(null, new Rational[][] {{Rational.ONE}}))
+            .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Matrix.of(f, (Rational[][]) null))
+            .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Matrix.of(f, new Rational[0][0]))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.of(f, new Rational[][] {null}))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.of(f, new Rational[][] {{}}))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> Matrix.zeros(0, 2, f)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.zeros(2, 0, f)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Matrix.zeros(2, 2, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Matrix.identity(0, f)).isInstanceOf(IllegalArgumentException.class);
+
+        // Exhaustive submatrix boundary conditions on a 2x3 matrix
+        assertThatThrownBy(() -> rectVarargs.submatrix(-1, 1, 0, 2))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(0, 3, 0, 2))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(1, 1, 0, 2))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(2, 1, 0, 2))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(0, 2, -1, 2))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(0, 2, 0, 4))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(0, 2, 1, 1))
+            .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> rectVarargs.submatrix(0, 2, 2, 1))
+            .isInstanceOf(IndexOutOfBoundsException.class);
     }
 
     @Test
@@ -68,8 +145,10 @@ public class MatrixADTTest {
 
         // (2x3) * (3x2) -> SquareMatrix (2x2) narrowed via sealed pattern matching
         Matrix<Rational> gram = rect.multiply(rect.transpose());
-        assertThat(gram).isInstanceOfSatisfying(SquareMatrix.class,
-            squareGram -> assertThat(squareGram.trace()).isEqualTo(Rational.of(14 + 77)));
+        assertThat(gram).isInstanceOf(SquareMatrix.class);
+        if (gram instanceof SquareMatrix<Rational> squareGram) {
+            assertThat(squareGram.trace()).isEqualTo(Rational.of(14 + 77));
+        }
 
         assertThat(sq.streamRows().toList()).containsExactly(
             List.of(Rational.of(2), Rational.of(1)),

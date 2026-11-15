@@ -1,15 +1,21 @@
 package lock14.algebra.polynomial;
 
+import java.math.BigInteger;
+import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.laws.RingLaws;
 import lock14.algebra.numbers.Quaternion;
 import lock14.algebra.numbers.QuaternionDivisionRing;
+import lock14.algebra.numbers.QuaternionRing;
 import lock14.algebra.numbers.Rational;
+import lock14.algebra.quotient.Residue;
+import lock14.algebra.quotient.ZMod;
 import lock14.algebra.structure.Ring;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class NonCommutativePolynomialRingTest extends RingLaws<Polynomial<Quaternion<Rational>>> {
 
@@ -31,12 +37,21 @@ public class NonCommutativePolynomialRingTest extends RingLaws<Polynomial<Quater
     }
 
     @Test
-    public void testNonCommutativeCoefficientMultiplication() {
+    public void testNonCommutativeCoefficientMultiplicationAndRingGuard() {
+        assertThat(hqx.x()).isEqualTo(hqx.of(hq.zero(), hq.one()));
+
         Polynomial<Quaternion<Rational>> ix = hqx.of(hq.zero(), hq.i());
         Polynomial<Quaternion<Rational>> jx = hqx.of(hq.zero(), hq.j());
 
         // (i*x) * (j*x) = k*x^2 != -k*x^2 = (j*x) * (i*x)
         assertThat(ix.multiply(jx)).isEqualTo(hqx.of(hq.zero(), hq.zero(), hq.k()));
         assertThat(jx.multiply(ix)).isEqualTo(hqx.of(hq.zero(), hq.zero(), hq.k().negate()));
+
+        QuaternionRing<Residue<BigInteger>> hZ6 = new QuaternionRing<>(ZMod.ring(6));
+        QuaternionRing<Residue<BigInteger>> hZ7 = new QuaternionRing<>(ZMod.ring(7));
+        NonCommutativePolynomialRing<Quaternion<Residue<BigInteger>>> hZ6x =
+            new NonCommutativePolynomialRing<>(hZ6);
+        assertThatThrownBy(() -> hZ6x.add(hZ6x.x(), Polynomial.x(hZ7)))
+            .isInstanceOf(IncompatibleAlgebraException.class);
     }
 }

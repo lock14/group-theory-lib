@@ -1,6 +1,7 @@
 package lock14.algebra.numbers;
 
 import java.math.BigInteger;
+import lock14.algebra.exceptions.NonInvertibleElementException;
 import lock14.algebra.laws.EuclideanDomainLaws;
 import lock14.algebra.structure.EuclideanDomain;
 import net.jqwik.api.Arbitraries;
@@ -10,6 +11,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class IntegersTest extends EuclideanDomainLaws<BigInteger> {
 
@@ -48,5 +50,13 @@ public class IntegersTest extends EuclideanDomainLaws<BigInteger> {
         var qr2 = Integers.RING.divideAndRemainder(BigInteger.valueOf(-7), BigInteger.valueOf(-5));
         assertThat(qr2.quotient()).isEqualTo(BigInteger.valueOf(2));
         assertThat(qr2.remainder()).isEqualTo(BigInteger.valueOf(3));
+
+        assertThat(Integers.RING.lcm(BigInteger.ZERO, BigInteger.valueOf(5))).isEqualTo(BigInteger.ZERO);
+        assertThat(Integers.RING.lcm(BigInteger.valueOf(5), BigInteger.ZERO)).isEqualTo(BigInteger.ZERO);
+        assertThat(Integers.RING.lcm(BigInteger.valueOf(-6), BigInteger.valueOf(4)))
+            .isEqualTo(BigInteger.valueOf(12));
+        assertThatThrownBy(() -> Integers.RING.divideAndRemainder(BigInteger.ONE, BigInteger.ZERO))
+            .isInstanceOf(NonInvertibleElementException.class);
+        assertThat(Integers.RING.toString()).isEqualTo("Z");
     }
 }

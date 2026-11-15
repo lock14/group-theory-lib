@@ -1,6 +1,8 @@
 package lock14.algebra.linear;
 
 import java.math.BigInteger;
+import java.util.List;
+import lock14.algebra.exceptions.DimensionMismatchException;
 import lock14.algebra.exceptions.IncompatibleAlgebraException;
 import lock14.algebra.exceptions.NonInvertibleElementException;
 import lock14.algebra.laws.RingLaws;
@@ -40,8 +42,15 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
     @Provide
     Arbitrary<SquareMatrix<Rational>> elements() {
         Arbitrary<Rational> rationals = Arbitraries.integers().between(-8, 8).map(Rational::of);
-        return rationals.array(Rational[].class).ofSize(4)
-            .map(arr -> SquareMatrix.of(2, Rationals.FIELD, arr));
+        return Arbitraries.oneOf(
+            Arbitraries.of(
+                matrixRing.zero(),
+                matrixRing.one(),
+                matrixRing.of(Rational.ONE, Rational.TWO, Rational.TWO, Rational.of(4))
+            ),
+            rationals.array(Rational[].class).ofSize(4)
+                .map(arr -> SquareMatrix.of(2, Rationals.FIELD, arr))
+        );
     }
 
     @Provide
@@ -59,6 +68,17 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
                 @SuppressWarnings("unchecked")
                 Residue<BigInteger>[] typed = (Residue<BigInteger>[]) arr;
                 return SquareMatrix.of(3, z12, typed);
+            });
+    }
+
+    @Provide
+    Arbitrary<SquareMatrix<Residue<BigInteger>>> mod12Matrices4x4() {
+        Arbitrary<Residue<BigInteger>> mods = Arbitraries.longs().between(0, 11).map(v -> ZMod.element(z12, v));
+        return mods.array(Residue[].class).ofSize(16)
+            .map(arr -> {
+                @SuppressWarnings("unchecked")
+                Residue<BigInteger>[] typed = (Residue<BigInteger>[]) arr;
+                return SquareMatrix.of(4, z12, typed);
             });
     }
 
@@ -86,6 +106,14 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
     }
 
     @Property
+    public void birdDivisionFreeDeterminantMultiplicativity4x4OverZMod12(
+            @ForAll("mod12Matrices4x4") SquareMatrix<Residue<BigInteger>> a,
+            @ForAll("mod12Matrices4x4") SquareMatrix<Residue<BigInteger>> b) {
+        assertThat(a.multiply(b).determinant(z12))
+            .isEqualTo(a.determinant(z12).multiply(b.determinant(z12)));
+    }
+
+    @Property
     public void luFactorizationIdentityOverRationals(
             @ForAll("rationalMatrices3x3") SquareMatrix<Rational> a) {
         LuDecomposition<Rational> lu = a.lu(Rationals.FIELD);
@@ -93,6 +121,88 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
         SquareMatrix<Rational> luProd = lu.lower().multiply(lu.upper());
         assertThat(pa).isEqualTo(luProd);
         assertThat(lu.determinant()).isEqualTo(a.determinant(Rationals.FIELD));
+    }
+
+    @Test
+    public void testMatrixRingConstructionPredicatesAndMembershipGuards() {
+        assertThat(matrixRing.dimension()).isEqualTo(2);
+        assertThat(matrixRing.entryRing()).isEqualTo(Rationals.FIELD);
+
+        SquareMatrix<Rational> m = matrixRing.of(Rational.ONE, Rational.TWO, Rational.of(3), Rational.of(4));
+        assertThat(m).isEqualTo(SquareMatrix.of(2, Rationals.FIELD,
+            Rational.ONE, Rational.TWO, Rational.of(3), Rational.of(4)));
+        assertThat(matrixRing.isZero(matrixRing.zero())).isTrue();
+        assertThat(matrixRing.isZero(matrixRing.one())).isFalse();
+        assertThat(matrixRing.isOne(matrixRing.one())).isTrue();
+        assertThat(matrixRing.isOne(matrixRing.zero())).isFalse();
+
+        assertThatThrownBy(() -> new MatrixRing<>(0, Rationals.FIELD))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new MatrixRing<>(-2, Rationals.FIELD))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new MatrixRing<>(2, null))
+            .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> matrixRing.of(Rational.ONE, Rational.TWO))
+            .isInstanceOf(DimensionMismatchException.class);
+
+        assertThatThrownBy(() -> matrixRing.negate(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> matrixRing.isZero(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> matrixRing.isOne(null)).isInstanceOf(NullPointerException.class);
+
+        SquareMatrix<Rational> m3 = SquareMatrix.identity(3, Rationals.FIELD);
+        assertThatThrownBy(() -> matrixRing.add(m3, matrixRing.one()))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.add(matrixRing.one(), m3))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.subtract(m3, matrixRing.one()))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.multiply(m3, matrixRing.one()))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.negate(m3))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.isZero(m3))
+            .isInstanceOf(DimensionMismatchException.class);
+        assertThatThrownBy(() -> matrixRing.isOne(m3))
+            .isInstanceOf(DimensionMismatchException.class);
+    }
+
+    @Test
+    public void testDeterminantSmallSizesBareissSwapsAndEvenDimensionBird() {
+        // 1x1 and 2x2 fast paths in MatrixOps.determinant
+        SquareMatrix<BigInteger> m1 = SquareMatrix.of(1, Integers.RING, BigInteger.valueOf(-7));
+        assertThat(m1.determinant(Integers.RING)).isEqualTo(BigInteger.valueOf(-7));
+
+        SquareMatrix<BigInteger> m2 = SquareMatrix.of(2, Integers.RING,
+            BigInteger.valueOf(3), BigInteger.valueOf(5),
+            BigInteger.TWO, BigInteger.valueOf(7));
+        assertThat(m2.determinant(Integers.RING)).isEqualTo(BigInteger.valueOf(11));
+
+        // 4x4 Bareiss determinant requiring row swap (odd sign) and exact multi-step division
+        SquareMatrix<BigInteger> bareiss4 = SquareMatrix.of(4, Integers.RING,
+            BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, BigInteger.ZERO,
+            BigInteger.TWO, BigInteger.valueOf(3), BigInteger.ZERO, BigInteger.ZERO,
+            BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(4), BigInteger.ONE,
+            BigInteger.ZERO, BigInteger.ZERO, BigInteger.ONE, BigInteger.valueOf(3));
+        assertThat(bareiss4.determinant(Integers.RING)).isEqualTo(BigInteger.valueOf(-22));
+
+        // 3x3 Bareiss singular matrix with all-zero column
+        SquareMatrix<BigInteger> bareissSingular = SquareMatrix.of(3, Integers.RING,
+            BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO,
+            BigInteger.ZERO, BigInteger.valueOf(3), BigInteger.valueOf(4),
+            BigInteger.ZERO, BigInteger.valueOf(5), BigInteger.valueOf(6));
+        assertThat(bareissSingular.determinant(Integers.RING)).isEqualTo(BigInteger.ZERO);
+
+        // 4x4 Bird division-free determinant over non-domain Z/12Z (even n >= 4 sign branch)
+        SquareMatrix<Residue<BigInteger>> bird4 = SquareMatrix.zeros(4, z12)
+            .with(0, 1, ZMod.element(z12, 1))
+            .with(0, 3, ZMod.element(z12, 2))
+            .with(1, 0, ZMod.element(z12, 3))
+            .with(1, 1, ZMod.element(z12, 1))
+            .with(2, 2, ZMod.element(z12, 2))
+            .with(2, 3, ZMod.element(z12, 5))
+            .with(3, 2, ZMod.element(z12, 1))
+            .with(3, 3, ZMod.element(z12, 4));
+        assertThat(bird4.determinant(z12)).isEqualTo(ZMod.element(z12, 3));
     }
 
     @Test
@@ -115,10 +225,12 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
         var f2 = ZMod.field(2);
         var alpha = gf16.of(Polynomial.x(f2));
         var alphaPlus1 = alpha.add(gf16.one());
-        SquareMatrix<Residue<Polynomial<Residue<BigInteger>>>> gfMat = SquareMatrix.of(2, gf16,
-            alpha, gf16.one(),
-            gf16.one(), alphaPlus1);
-        Vector<Residue<Polynomial<Residue<BigInteger>>>> gfRhs = Vector.of(gf16, gf16.one(), alpha);
+        SquareMatrix<Residue<Polynomial<Residue<BigInteger>>>> gfMat = SquareMatrix.zeros(2, gf16)
+            .with(0, 0, alpha)
+            .with(0, 1, gf16.one())
+            .with(1, 0, gf16.one())
+            .with(1, 1, alphaPlus1);
+        Vector<Residue<Polynomial<Residue<BigInteger>>>> gfRhs = Vector.of(gf16, List.of(gf16.one(), alpha));
         var gfSol = gfMat.solve(gf16, gfRhs);
         assertThat(gfMat.multiply(gfSol)).isEqualTo(gfRhs);
     }
@@ -126,16 +238,18 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
     @Test
     public void testExactNonCommutativeQuaternionSolveAndInverse() {
         var hq = QuaternionDivisionRing.overRationals();
-        SquareMatrix<Quaternion<Rational>> qm = SquareMatrix.of(2, hq,
-            Quaternion.ofRational(1, 1, 0, 0), hq.j(),
-            hq.k(), Quaternion.ofRational(2, 0, 1, -1));
+        SquareMatrix<Quaternion<Rational>> qm = SquareMatrix.identity(2, hq)
+            .with(0, 0, Quaternion.ofRational(1, 1, 0, 0))
+            .with(0, 1, hq.j())
+            .with(1, 0, hq.k())
+            .with(1, 1, Quaternion.ofRational(2, 0, 1, -1));
 
         SquareMatrix<Quaternion<Rational>> inv = qm.inverse(hq);
         SquareMatrix<Quaternion<Rational>> id = SquareMatrix.identity(2, hq);
         assertThat(qm.multiply(inv)).isEqualTo(id);
         assertThat(inv.multiply(qm)).isEqualTo(id);
 
-        Vector<Quaternion<Rational>> rhs = Vector.of(hq, hq.i(), hq.j().add(hq.k()));
+        Vector<Quaternion<Rational>> rhs = Vector.of(hq, List.of(hq.i(), hq.j().add(hq.k())));
         Vector<Quaternion<Rational>> x = qm.solve(hq, rhs);
         assertThat(qm.multiply(x)).isEqualTo(rhs);
     }
@@ -143,10 +257,16 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
     @Test
     public void testBareissOverGaussianIntegersAndCharacteristicPolynomial() {
         var zi = GaussianIntegers.DOMAIN;
-        SquareMatrix<Complex<BigInteger>> gm = SquareMatrix.of(3, zi,
-            zi.of(2, 1), zi.of(1, 0), zi.of(0, -1),
-            zi.of(0, 1), zi.of(3, -1), zi.of(1, 1),
-            zi.of(1, -1), zi.of(0, 2), zi.of(2, 0));
+        SquareMatrix<Complex<BigInteger>> gm = SquareMatrix.zeros(3, zi)
+            .with(0, 0, zi.of(2, 1))
+            .with(0, 1, zi.of(1, 0))
+            .with(0, 2, zi.of(0, -1))
+            .with(1, 0, zi.of(0, 1))
+            .with(1, 1, zi.of(3, -1))
+            .with(1, 2, zi.of(1, 1))
+            .with(2, 0, zi.of(1, -1))
+            .with(2, 1, zi.of(0, 2))
+            .with(2, 2, zi.of(2, 0));
         Complex<BigInteger> detGm = gm.determinant(zi);
         assertThat(gm.transpose().determinant(zi)).isEqualTo(detGm);
 
@@ -155,11 +275,10 @@ public class MatrixRingTest extends RingLaws<SquareMatrix<Rational>> {
         Polynomial<Rational> c1 = qx.constant(Rational.of(1));
         Polynomial<Rational> c2 = qx.constant(Rational.of(2));
         Polynomial<Rational> c3 = qx.constant(Rational.of(3));
-        Polynomial<Rational> zero = qx.zero();
-        SquareMatrix<Polynomial<Rational>> charMat = SquareMatrix.of(3, qx,
-            x.subtract(c1), zero, zero,
-            zero, x.subtract(c2), zero,
-            zero, zero, x.subtract(c3));
+        SquareMatrix<Polynomial<Rational>> charMat = SquareMatrix.zeros(3, qx)
+            .with(0, 0, x.subtract(c1))
+            .with(1, 1, x.subtract(c2))
+            .with(2, 2, x.subtract(c3));
         assertThat(charMat.determinant(qx)).isEqualTo(
             x.subtract(c1).multiply(x.subtract(c2)).multiply(x.subtract(c3))
         );
