@@ -1,12 +1,12 @@
 # group-theory-lib
 
-> Clean-slate exact abstract algebra, finite group theory, linear algebra, and off-heap FFM numerical computing for Java 25 LTS (`module lock14.algebra`).
+> Exact abstract algebra, finite group theory, linear algebra, and off-heap FFM numerical computing for Java 25 LTS (`module lock14.algebra`).
 
 ## Overview
 
-`lock14/group-theory-lib` (3.0) is a zero-runtime-dependency Java 25 LTS library (`requires java.base` only) built on a dual-layer architecture combining Haskell/Scala-style algebraic typeclasses (`lock14.algebra.structure`) with F-bounded fluent elements (`lock14.algebra.element`). Every `Group`, `Ring`, `IntegralDomain`, `EuclideanDomain`, `DivisionRing`, and `Field` implementation is 100% mathematically exact, while IEEE-754 floating-point approximations and Foreign Function & Memory (`Arena`) matrices live in `lock14.algebra.numeric`.
+`lock14/group-theory-lib` (3.0) is a zero-runtime-dependency Java 25 LTS library (`requires java.base` only) built on a dual-layer architecture combining algebraic typeclasses (`lock14.algebra.structure`) with F-bounded fluent elements (`lock14.algebra.element`). Every `Group`, `Ring`, `IntegralDomain`, `EuclideanDomain`, `DivisionRing`, and `Field` implementation is mathematically exact, while IEEE-754 floating-point approximations and Foreign Function and Memory (`Arena`) matrices live in `lock14.algebra.numeric`.
 
-## Quick Start
+## Quick start
 
 ```xml
 <dependency>
@@ -19,12 +19,17 @@
 ```java
 import java.util.List;
 import java.util.Set;
-import lock14.algebra.group.*;
-import lock14.algebra.linear.*;
-import lock14.algebra.numbers.*;
-import lock14.algebra.quotient.*;
+import lock14.algebra.group.Permutation;
+import lock14.algebra.group.QuotientGroup;
+import lock14.algebra.group.Subgroup;
+import lock14.algebra.group.SymmetricGroup;
+import lock14.algebra.linear.SquareMatrix;
+import lock14.algebra.linear.Vector;
+import lock14.algebra.numbers.Rational;
+import lock14.algebra.numbers.Rationals;
+import lock14.algebra.quotient.GaloisFields;
 
-// 1. Quotient group S_4 / V_4 (order 6) & Burnside's lemma
+// 1. Quotient group S_4 / V_4 (order 6)
 SymmetricGroup s4 = new SymmetricGroup(4);
 Subgroup<Permutation> v4 = Subgroup.of(s4, Set.of(
     Permutation.identity(4),
@@ -34,46 +39,46 @@ Subgroup<Permutation> v4 = Subgroup.of(s4, Set.of(
 ));
 QuotientGroup<Permutation> q = QuotientGroup.of(s4, v4);
 
-// 2. AES Rijndael Galois field GF(2^8) = F_2[x] / (x^8 + x^4 + x^3 + x + 1)
+// 2. AES Rijndael Galois field GF(2^8) = F_2[x] / (1 + x + x^3 + x^4 + x^8)
 var gf256 = GaloisFields.extension(2, 1, 1, 0, 1, 1, 0, 0, 0, 1);
 
-// 3. Exact rational linear system solve & RREF nullspace basis
+// 3. Exact rational linear system solve
 SquareMatrix<Rational> a = SquareMatrix.of(2, Rationals.FIELD,
     Rational.of(1), Rational.of(2),
     Rational.of(3), Rational.of(4));
 Vector<Rational> x = a.solve(Vector.of(Rationals.FIELD, Rational.of(5), Rational.of(11)));
 ```
 
-## Core Typeclasses (`lock14.algebra.structure`)
+## Core typeclasses
 
-- `Magma<T>` -> `Semigroup<T>` -> `Monoid<T>` -> `Group<T>` -> `AbelianGroup<T>` / `FiniteGroup<T>`: Single-operation hierarchy with binary `power`, `Collector`, and Java 25 `Gatherer` prefix scans (`scanGatherer()`).
-- `Semiring<T>` -> `Ring<T>` -> `CommutativeRing<T>` -> `IntegralDomain<T>` -> `EuclideanDomain<T>` -> `Field<T>`: Ring hierarchy with `divRem`, `gcd`, and Bézout `extendedGcd`.
-- `DivisionRing<T>`: Potentially non-commutative skew-fields (`tryReciprocal`, `reciprocal`) unifying `QuaternionDivisionRing` and `Field`.
-- `LeftModule<M, R>` -> `VectorSpace<V, F>`: Scalar-action structures over rings and fields.
-- `DirectProduct`, `Pair<A, B>`, `GroupHomomorphism<A, B>`, `RingHomomorphism<A, B>`: Universal product constructions and structure-preserving maps.
+- **Single-operation hierarchy**: `Magma<T>`, `Semigroup<T>`, `Monoid<T>`, `Group<T>`, `AbelianGroup<T>`, and `FiniteGroup<T>` in `lock14.algebra.structure` with binary `power`, `Collector`, and Java 25 `Gatherer` prefix scans (`scanGatherer()`).
+- **Ring and field hierarchy**: `Semiring<T>`, `Ring<T>`, `CommutativeRing<T>`, `IntegralDomain<T>`, `EuclideanDomain<T>`, and `Field<T>` with `divideAndRemainder`, `gcd`, and Bézout `extendedGcd`.
+- **Skew-fields**: `DivisionRing<T>` (`tryReciprocal`, `reciprocal`) unifying non-commutative `QuaternionDivisionRing` and commutative `Field`.
+- **Linear structures**: `LeftModule<M, R>` and `VectorSpace<V, F>` for scalar action over rings and fields.
+- **Universal products and morphisms**: `DirectProduct`, `Pair<A, B>`, `GroupHomomorphism<A, B>`, and `RingHomomorphism<A, B>`.
 
-## Exported JPMS Packages (`module lock14.algebra`)
+## Exported JPMS packages
 
 - `lock14.algebra.structure`: Exact algebraic typeclasses, homomorphisms, and direct products.
 - `lock14.algebra.element`: Self-typed fluent element contracts (`GroupElement`, `RingElement`, `DivisionRingElement`, `FieldElement`, `ModuleElement`).
 - `lock14.algebra.exceptions`: Unchecked domain exceptions (`AlgebraException`, `NonInvertibleElementException`, `IncompatibleAlgebraException`, `DimensionMismatchException`, `UndefinedOperationException`).
 - `lock14.algebra.group`: `Permutation`, `SymmetricGroup`, `AlternatingGroup`, `CyclicGroup`, `DihedralGroup`, `Subgroup`, `Coset`, `QuotientGroup`, and `GroupAction` (orbits, stabilizers, Burnside's lemma).
-- `lock14.algebra.numbers`: `Integers` (canonical least-non-negative Euclidean Z), `Rational` / `Rationals` (Q), `Complex<T>`, `ComplexRing<T>`, `GaussianIntegers` (Euclidean Z[i]), `ComplexField<T>` (Q(i)), `Quaternion<T>`, `QuaternionRing<T>`, and `QuaternionDivisionRing<T>` (H(Q)).
+- `lock14.algebra.numbers`: `Integers` (canonical least-non-negative Euclidean $\mathbb{Z}$), `Rational` and `Rationals` ($\mathbb{Q}$), `Complex<T>`, `ComplexRing<T>`, `GaussianIntegers` (Euclidean $\mathbb{Z}[i]$), `ComplexField<T>` ($\mathbb{Q}(i)$), `Quaternion<T>`, `QuaternionRing<T>`, and `QuaternionDivisionRing<T>` ($\mathbb{H}(\mathbb{Q})$).
 - `lock14.algebra.polynomial`: `Polynomial<T>`, `PolynomialRing<T>`, `NonCommutativePolynomialRing<T>`, and `PolynomialEuclideanDomain<T>` (monic long division, GCD, Horner evaluation, derivatives).
-- `lock14.algebra.quotient`: Universal Euclidean quotients `Residue<T>`, `QuotientRing<T>`, `QuotientField<T>`, `ZMod` (Z/nZ and F_p), and Rabin-verified `GaloisFields` (`GF(p^k)`).
+- `lock14.algebra.quotient`: Universal Euclidean quotients `Residue<T>`, `QuotientRing<T>`, `QuotientField<T>`, `ZMod` ($\mathbb{Z}/n\mathbb{Z}$ and $\mathbb{F}_p$), and Rabin-verified `GaloisFields` ($GF(p^k)$).
 - `lock14.algebra.linear`: Sealed `Matrix<T>` (`SquareMatrix<T>`, `RectangularMatrix<T>`), `Vector<T>`, `CoordinateModule<T>`, `CoordinateVectorSpace<T>`, `MatrixRing<T>`, `RrefResult<T>` (`rref`, `rank`, `nullity`, `kernel`), and `LuDecomposition<T>` (`lu`, `solve`, `inverse`, `tryInverse`, `determinant`).
-- `lock14.algebra.numeric`: `NumericContext` (`ScopedValue` `EPSILON` & `MATH_CONTEXT`), `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64` (SLERP & 3D rotations), and off-heap FFM `Arena`-backed `Float64Matrix`.
+- `lock14.algebra.numeric`: `NumericContext` (`ScopedValue` `EPSILON` and `MATH_CONTEXT`), `ApproximateField<T>`, `Float64Field`, `Complex64`, `Quaternion64` (SLERP and 3D rotations), and off-heap FFM `Arena`-backed `Float64Matrix`.
 
-## Key Design Invariants
+## Key design invariants
 
-- **Exact Equality:** Core algebraic structures never use approximate floating-point tolerances; `equals` and `hashCode` reflect canonical mathematical equivalence (reduced rationals, trimmed polynomials, canonical cosets, least-non-negative Euclidean remainders).
-- **Explicit Parent Ownership:** Modular and parameterized elements carry their parent structure directly and throw `IncompatibleAlgebraException` on cross-modulus/cross-ring arithmetic.
-- **Zero-Copy Encapsulation:** Backing arrays are never exposed directly; public factories validate and copy inputs while internal operations use package-private zero-copy constructors.
-- **Total & Throwing Inverses:** Partial inversions offer both `Optional`-returning `tryReciprocal` / `tryInverse` and `NonInvertibleElementException`-throwing `reciprocal` / `inverse`.
+- **Exact equality**: Core algebraic structures never use approximate floating-point tolerances; `equals` and `hashCode` reflect canonical mathematical equivalence (reduced rationals, trimmed polynomials, canonical cosets, least-non-negative Euclidean remainders).
+- **Explicit parent ownership**: Modular and parameterized elements carry their parent structure directly and throw `IncompatibleAlgebraException` on mismatched moduli, rings, or groups.
+- **Zero-copy encapsulation**: Backing arrays are never exposed directly; public factories validate and copy inputs while internal operations use package-private zero-copy constructors.
+- **Total and throwing inverses**: Partial inversions provide both `Optional`-returning `tryReciprocal` and `tryInverse` queries and `NonInvertibleElementException`-throwing `reciprocal` and `inverse` methods.
 
 ## References
 
 - Repository: https://github.com/lock14/group-theory-lib
 - Contributing: https://github.com/lock14/group-theory-lib/blob/main/CONTRIBUTING.md
-- Agent Directives: https://github.com/lock14/group-theory-lib/blob/main/AGENTS.md
+- Agent directives: https://github.com/lock14/group-theory-lib/blob/main/AGENTS.md
 - Issues: https://github.com/lock14/group-theory-lib/issues

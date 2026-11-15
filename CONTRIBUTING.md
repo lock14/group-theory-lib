@@ -1,51 +1,45 @@
 # Contributing to group-theory-lib
 
-Thank you for your interest in contributing to `lock14/group-theory-lib`! This document outlines our architectural invariants, package conventions, testing and benchmarking workflows, and pull request guidelines.
+This document outlines the architectural invariants, package conventions, testing and benchmarking workflows, and pull request guidelines for `lock14/group-theory-lib`.
 
----
+## Core architectural principles
 
-## 1. Core Architectural Principles
+*   **Exact and numerical separation**:
+    *   `lock14.algebra.structure` (`Group`, `FiniteGroup`, `Ring`, `IntegralDomain`, `EuclideanDomain`, `DivisionRing`, `Field`, `LeftModule`, `VectorSpace`) is strictly for mathematically exact types (`equals` matches mathematical equality).
+    *   IEEE-754 floating-point approximations (`ApproximateField`, `Float64Field`, `Complex64`, `Quaternion64`) and off-heap Foreign Function and Memory matrices (`Float64Matrix`) live in `lock14.algebra.numeric` using `ScopedValue`-configured tolerances (`NumericContext.EPSILON`).
+*   **Zero runtime dependencies**: `module lock14.algebra` depends only on `java.base`. Test and benchmark libraries (`junit-jupiter`, `assertj-core`, `jqwik`, `jmh-core`) are strictly scoped to testing and benchmarking.
+*   **Interface segregation**: Never implement an algebraic interface only to throw `UndefinedOperationException` at runtime. Use sealed types (`Matrix<T> permits SquareMatrix, RectangularMatrix`) and pair total `Optional<T>` queries (`tryReciprocal`, `tryInverse`) with `NonInvertibleElementException`-throwing convenience methods (`reciprocal`, `inverse`).
+*   **Immutability and explicit ownership**: Exact elements encapsulate their backing storage (defensive copies at public boundaries, package-private zero-copy constructors internally) and carry their parent ring, modulus, or group explicitly, throwing `IncompatibleAlgebraException` on mismatched algebras.
 
-*   **Exact vs. Numerical Separation:**
-    *   `lock14.algebra.structure` (`Group`, `FiniteGroup`, `Ring`, `IntegralDomain`, `EuclideanDomain`, `DivisionRing`, `Field`, `LeftModule`, `VectorSpace`) is strictly for **100% mathematically exact** types (`equals` matches mathematical equality).
-    *   IEEE-754 floating-point approximations (`ApproximateField`, `Float64Field`, `Complex64`, `Quaternion64`) and off-heap Foreign Function & Memory matrices (`Float64Matrix`) live in `lock14.algebra.numeric` using `ScopedValue`-configured tolerances (`NumericContext.EPSILON`).
-*   **Zero Runtime Dependencies:** `module lock14.algebra` depends *only* on `java.base`. Test and benchmark libraries (`junit-jupiter`, `assertj-core`, `jqwik`, `jmh-core`) are strictly scoped to testing and benchmarking.
-*   **Interface Segregation:** Never implement an algebraic interface only to throw `UndefinedOperationException` at runtime. Use sealed types (`Matrix<T> permits SquareMatrix, RectangularMatrix`) and pair total `Optional<T> tryReciprocal` / `tryInverse` methods with `NonInvertibleElementException`-throwing `reciprocal()` / `inverse()`.
-*   **Immutability & Explicit Ownership:** Exact elements encapsulate their backing storage (defensive copies at public boundaries, package-private zero-copy constructors internally) and carry their parent ring/modulus/group explicitly, throwing `IncompatibleAlgebraException` on mismatched algebras.
-
----
-
-## 2. Package Structure
+## Package structure
 
 Each domain package (`structure`, `group`, `numbers`, `polynomial`, `quotient`, `linear`, `numeric`) maintains four coordinated artifacts:
 
-1.  **`src/main/java/lock14/algebra/<pkg>/`**: Implementation classes plus `package-info.java` overview with JEP 413 `{@snippet}` examples.
-2.  **`src/test/java/lock14/algebra/<pkg>/<Type>Test.java`**: `jqwik` property-based `*Laws` verification plus AssertJ edge-case unit tests.
-3.  **`src/test/java/lock14/algebra/<pkg>/<Pkg>ExamplesTest.java`**: Runnable consumer-perspective examples demarcated with `// @start region="..."` / `// @end`.
-4.  **`src/jmh/java/lock14/algebra/benchmarks/<Pkg>Benchmarks.java`**: JMH microbenchmarks measuring latency (`ns/op`) and allocation rate (`B/op`).
+1.  **Main implementation**: `src/main/java/lock14/algebra/<pkg>/` contains implementation classes and a `package-info.java` overview with JEP 413 `{@snippet}` examples.
+2.  **Law and unit tests**: `src/test/java/lock14/algebra/<pkg>/<Type>Test.java` contains `jqwik` property-based `*Laws` verification and AssertJ edge-case unit tests.
+3.  **Consumer examples**: `src/test/java/lock14/algebra/<pkg>/<Pkg>ExamplesTest.java` contains runnable consumer-perspective examples demarcated with `// @start region="..."` and `// @end`.
+4.  **Microbenchmarks**: `src/jmh/java/lock14/algebra/benchmarks/<Pkg>Benchmarks.java` contains JMH microbenchmarks measuring latency (`ns/op`) and allocation rate (`B/op`).
 
----
-
-## 3. Development Setup & Workflow
+## Development setup and workflow
 
 ### Prerequisites
 
-*   **OpenJDK 25 LTS** or higher
-*   **Git** (Maven is bundled via `./mvnw` / `.\mvnw.cmd`)
+*   OpenJDK 25 LTS or higher
+*   Git (Maven is bundled via `./mvnw` and `.\mvnw.cmd`)
 
-### Clone, Test & Generate Javadocs
+### Clone, test, and generate Javadocs
 
 ```bash
 git clone https://github.com/lock14/group-theory-lib.git
 cd group-theory-lib
 
-# Run validation, full unit + jqwik property test suite, and strict Javadoc verification
+# Run validation, full unit and jqwik property test suite, and strict Javadoc verification
 ./mvnw clean validate test javadoc:javadoc
 ```
 
-### Property-Based Law Testing (`jqwik`)
+### Property-based law testing (`jqwik`)
 
-Every concrete algebraic structure must implement the corresponding `*Laws` contract interface in `src/test/java/lock14/algebra/laws/` (for example, `FieldLaws<T>`, `EuclideanDomainLaws<T>`, `DivisionRingLaws<T>`, or `FiniteGroupLaws<T>`):
+Every concrete algebraic structure must implement the corresponding `*Laws` contract interface in `src/test/java/lock14/algebra/laws/` (such as `FieldLaws<T>`, `EuclideanDomainLaws<T>`, `DivisionRingLaws<T>`, or `FiniteGroupLaws<T>`):
 
 ```java
 class MyFieldTest implements FieldLaws<MyElement> {
@@ -64,7 +58,7 @@ class MyFieldTest implements FieldLaws<MyElement> {
 
 ### Benchmarking (JMH)
 
-Once the `-Pbenchmarks` profile is active, compile and run JMH benchmarks (including GC allocation profiling via `-prof gc`):
+Activate the `-Pbenchmarks` profile to compile and run JMH benchmarks with GC allocation profiling (`-prof gc`):
 
 ```bash
 # Compile JMH benchmarks
@@ -74,11 +68,9 @@ Once the `-Pbenchmarks` profile is active, compile and run JMH benchmarks (inclu
 ./mvnw -Pbenchmarks test-compile exec:exec "-Djmh.args=LinearBenchmarks -wi 2 -i 4 -f 1 -prof gc"
 ```
 
----
+## Pre-pull-request verification checklist
 
-## 4. Pre-Pull-Request Verification Checklist
-
-Before opening a pull request, ensure all checks succeed locally with zero errors or warnings:
+Before opening a pull request, verify all checks succeed locally with zero errors or warnings:
 
 ```bash
 # 1. Enforcer, Checkstyle, strict compiler (-Xlint:all -Werror), tests, JaCoCo, and Javadocs
@@ -88,11 +80,9 @@ Before opening a pull request, ensure all checks succeed locally with zero error
 ./mvnw --batch-mode --no-transfer-progress -Pbenchmarks test-compile
 ```
 
----
+## Pull request guidelines
 
-## 5. Pull Request Guidelines
-
-1.  **Branch Naming:** Use descriptive prefixes (`feat/...`, `fix/...`, `perf/...`, `docs/...`, `ci/...`, `chore/...`).
-2.  **Commit Messages:** Follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat: add Cayley graph generator`, `fix: handle degree-0 derivative over characteristic p`).
-3.  **PR Template:** Complete [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md), noting algebraic law coverage and any benchmark impact.
-4.  **Documentation Sync:** Update Javadocs, `README.md`, `llms.txt`, and `AGENTS.md` together whenever public APIs or packages change.
+1.  **Branch naming**: Use descriptive prefixes (`feat/...`, `fix/...`, `perf/...`, `docs/...`, `ci/...`, `chore/...`).
+2.  **Commit messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/) with an imperative subject line of 50 characters or fewer (hard cap at 72) and no trailing period (for example, `feat: add Cayley graph generator` or `fix: handle degree-0 derivative over characteristic p`).
+3.  **Pull request template**: Complete the [pull request template](.github/PULL_REQUEST_TEMPLATE.md), explaining "why" before "what" and noting algebraic law coverage and any benchmark impact.
+4.  **Documentation synchronization**: Update Javadocs, `README.md`, `CONTRIBUTING.md`, `llms.txt`, and `AGENTS.md` together whenever public APIs, packages, or invariants change.
