@@ -61,5 +61,27 @@ public class GaloisFieldTest extends FieldLaws<Residue<Polynomial<Residue<BigInt
         // Reducible polynomial x^4 + x^2 + 1 = (x^2 + x + 1)^2 over F_2 must be rejected by Rabin's test
         assertThatThrownBy(() -> GaloisFields.extension(2, 1, 0, 1, 0, 1))
             .isInstanceOf(IllegalArgumentException.class);
+
+        // Reducible degree-5 polynomial (x^2 + x + 1)(x^3 + x + 1) = x^5 + x^4 + 1 has no F_2 roots
+        // (passes the q = 5 prime-divisor GCD check) and is rejected by the x^(p^n) == x check
+        Polynomial<Residue<BigInteger>> deg5Composite = Polynomial.of(
+            f2, List.of(f2.one(), f2.zero(), f2.zero(), f2.zero(), f2.one(), f2.one())
+        );
+        assertThat(GaloisFields.isIrreducible(f2, deg5Composite)).isFalse();
+
+        // Degree 0, degree -1, degree 1, prime degree, and composite non-power-of-two degree
+        assertThat(GaloisFields.isIrreducible(f2, Polynomial.zero(f2))).isFalse();
+        assertThat(GaloisFields.isIrreducible(f2, Polynomial.one(f2))).isFalse();
+        assertThat(GaloisFields.isIrreducible(f2, Polynomial.of(f2, List.of(f2.one(), f2.one())))).isTrue();
+
+        assertThat(GaloisFields.extension(2, 1, 1).modulus().degree()).isEqualTo(1);
+        assertThat(GaloisFields.extension(2, 1, 1, 0, 1).modulus().degree()).isEqualTo(3);
+        assertThat(GaloisFields.extension(2, 1, 0, 1, 0, 0, 1).modulus().degree()).isEqualTo(5);
+        assertThat(GaloisFields.extension(2, 1, 1, 0, 0, 0, 0, 1).modulus().degree()).isEqualTo(6);
+
+        assertThatThrownBy(() -> GaloisFields.extension(f2, Polynomial.one(f2)))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> GaloisFields.extension(f2, Polynomial.x(ZMod.field(3))))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }
