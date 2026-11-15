@@ -118,12 +118,12 @@ jobs:
 
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
               if selected:
-                  summary.write("### Detected JMH Benchmark Suites\n\n")
+                  summary.write("### Detected JMH benchmark suites\n\n")
                   for s in selected:
                       summary.write(f"- `{s}`\n")
               else:
                   summary.write(
-                      "### JMH Benchmarks Skipped\n\n"
+                      "### JMH benchmarks skipped\n\n"
                       "No changes detected under `src/main/java/lock14/algebra/` or `src/jmh/java/`.\n"
                   )
           PY
@@ -205,9 +205,9 @@ jobs:
                       return sec[key].get("score")
               return None
 
-          lines = [f"### 📊 JMH Results: `{suite}`\n"]
+          lines = [f"### JMH benchmark results (`{suite}`)\n"]
           if base_by_name:
-              lines.append("| Benchmark | Base (ns/op) | HEAD (ns/op) | Delta | Base Alloc (B/op) | HEAD Alloc (B/op) |")
+              lines.append("| Benchmark | Base (ns/op) | HEAD (ns/op) | Delta | Base alloc (B/op) | HEAD alloc (B/op) |")
               lines.append("| :--- | ---: | ---: | ---: | ---: | ---: |")
               for item in head_entries:
                   full_name = item["benchmark"]
@@ -232,7 +232,7 @@ jobs:
                           f"| `{short_name}` | n/a | {head_score:,.2f} | new | n/a | {head_alloc_str} |"
                       )
           else:
-              lines.append("| Benchmark | HEAD (ns/op) | HEAD Alloc (B/op) |")
+              lines.append("| Benchmark | HEAD (ns/op) | HEAD alloc (B/op) |")
               lines.append("| :--- | ---: | ---: |")
               for item in head_entries:
                   short_name = item["benchmark"].split(".")[-1]

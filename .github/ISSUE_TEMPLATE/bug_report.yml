@@ -1,71 +1,73 @@
-name: 🐛 Bug Report
-description: Report a bug, incorrect algebraic calculation, or unexpected exception
+name: Bug report
+description: Report a bug, incorrect algebraic calculation, or unexpected exception in group-theory-lib
 title: "[Bug]: "
 labels: ["bug"]
 body:
-  - type: markdown
+  - type: dropdown
+    id: package
     attributes:
-      value: |
-        Thank you for reporting an issue in `group-theory-lib`! Please provide as much detail as possible to help us reproduce and resolve the problem.
-
-  - type: textarea
-    id: description
-    attributes:
-      label: Description
-      description: A clear and concise description of what the bug is.
-      placeholder: Describe what happened...
-    validations:
-      required: true
-
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Minimal Reproducible Example
-      description: Provide a short, self-contained Java 25 snippet that reproduces the issue.
-      placeholder: |
-        ```java
-        import lock14.algebra.numbers.*;
-
-        Rational a = Rational.of(1, 2);
-        // ...
-        ```
-      render: java
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      description: What mathematical result or behavior did you expect?
-      placeholder: Explain what behavior was expected...
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior & Output
-      description: What actually happened? Include exception messages or stack traces if applicable.
-      placeholder: |
-        lock14.algebra.exceptions.NonInvertibleElementException: ...
-    validations:
-      required: true
-
-  - type: input
-    id: java-version
-    attributes:
-      label: Java Version
-      description: Output of `java --version`
-      placeholder: e.g. openjdk 25 2025-09-16 LTS
+      label: Affected package
+      description: Package experiencing the issue.
+      options:
+        - "lock14.algebra.structure (typeclasses, morphisms, direct products)"
+        - "lock14.algebra.element (self-typed element contracts)"
+        - "lock14.algebra.group (permutations, finite groups, quotients, actions)"
+        - "lock14.algebra.numbers (integers, rationals, complex, quaternions)"
+        - "lock14.algebra.polynomial (univariate polynomials and Euclidean division)"
+        - "lock14.algebra.quotient (modular rings, prime fields, Galois fields)"
+        - "lock14.algebra.linear (matrices, vectors, RREF, kernel, LU)"
+        - "lock14.algebra.numeric (Float64, Complex64, Quaternion64, FFM Float64Matrix)"
+        - "Other"
     validations:
       required: true
 
   - type: input
     id: environment
     attributes:
-      label: Operating System & Architecture
-      description: OS and Architecture (e.g. Linux amd64, macOS aarch64, Windows amd64)
-      placeholder: e.g. Linux amd64
+      label: Operating system and architecture
+      description: Operating system and CPU architecture (such as Ubuntu 24.04 amd64, macOS Sonoma arm64, or Windows 11 x64).
+      placeholder: Linux x86_64
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version
+      description: Output of `java --version`.
+      placeholder: openjdk 25 2025-09-16 LTS
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproducible steps
+      description: Numbered steps or a self-contained Java 25 snippet that reproduces the issue.
+      render: java
+      placeholder: |
+        import lock14.algebra.numbers.Rational;
+
+        Rational a = Rational.of(1, 2);
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Mathematical result or deterministic behavior expected from the operation.
+      placeholder: Describe what should happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and stack trace
+      description: Observed result, exception message, or stack trace.
+      render: shell
+      placeholder: |
+        Paste exception output or observed value here...
     validations:
       required: true

@@ -1,35 +1,34 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-We support security updates for the following versions of `group-theory-lib`:
+Security updates are provided for the following versions of `group-theory-lib`:
 
-| Version | Supported          | JDK Target |
-| :------ | :----------------- | :--------- |
-| `3.x`   | :white_check_mark: | Java 25+   |
-| `2.x`   | :x:                | Java 25    |
-| `< 2.0` | :x:                | Java 8     |
+| Version | Supported | JDK target |
+| :--- | :--- | :--- |
+| `3.x` | Yes | Java 25+ |
+| `2.x` | No | Java 25 |
+| `< 2.0` | No | Java 8 |
 
----
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+If you discover a security vulnerability in `group-theory-lib`—such as native memory safety issues in Foreign Function and Memory (`java.lang.foreign`) operations or unbounded allocation and algorithmic denial-of-service vectors—report it privately using the following steps:
 
-We take the security of `group-theory-lib` seriously—especially around off-heap Foreign Function & Memory (`java.lang.foreign`) operations and algorithmic denial-of-service vectors. If you discover a security vulnerability, please report it responsibly:
+1.  Do not report security vulnerabilities through public GitHub issues or discussions.
+2.  Submit a report using [GitHub Private Vulnerability Reporting](https://github.com/lock14/group-theory-lib/security/advisories/new) on this repository.
+3.  If private vulnerability reporting is unavailable, contact the maintainer directly.
 
-1. **Do not** report security vulnerabilities through public GitHub issues or discussions.
-2. Please use [GitHub Private Vulnerability Reporting](https://github.com/lock14/group-theory-lib/security/advisories/new) on this repository.
-3. If private vulnerability reporting is unavailable, contact the maintainers directly.
+### What to include in your report
 
-### What to Include in Your Report
+Include the following details to help triage and resolve the issue:
 
-To help us triage and resolve the issue quickly, please include:
-* A detailed description of the vulnerability.
-* Steps to reproduce the issue or a minimal Java 25 reproducer.
-* Impact assessment (e.g., native memory safety in `Float64Matrix`, unbounded allocation / algorithmic complexity DoS).
-* Any suggested fixes or mitigations.
+*   A clear description of the vulnerability and affected package or type.
+*   Numbered steps or a minimal Java 25 snippet to reproduce the issue.
+*   An impact assessment (such as native memory safety in `Float64Matrix` or unbounded allocation complexity).
+*   Any suggested fixes or mitigations.
 
-### Response Timeline
+### Response timeline
 
-* We will acknowledge receipt of your vulnerability report within **48 hours**.
-* We will provide a status update and estimated timeline for a fix within **7 days**.
-* Once a fix is verified, a patch release and security advisory will be published.
+*   Receipt of a vulnerability report is acknowledged within 48 hours.
+*   A status update and estimated fix timeline are provided within 7 days.
+*   Once a fix is verified, a patch release and security advisory are published.

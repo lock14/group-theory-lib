@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security Vulnerability Reporting
-    url: https://github.com/lock14/group-theory-lib/security/policy
-    about: Please report security vulnerabilities privately according to our security policy.
+  - name: Security vulnerability reporting
+    url: https://github.com/lock14/group-theory-lib/security/advisories/new
+    about: Report security vulnerabilities privately using GitHub Private Vulnerability Reporting.
