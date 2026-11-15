@@ -31,7 +31,7 @@ Every exported domain package in `module lock14.algebra` follows a standardized 
     *   `<Type>.java`: Immutable elements, typeclass implementations, and package-private algorithmic helpers (such as `MatrixOps.java`).
 2.  **Axiomatic law and unit tests**: `src/test/java/lock14/algebra/<pkg>/<Type>Test.java` provides `jqwik` property-based law verification implementing the matching `*Laws` interface from `lock14.algebra.laws`, paired with deterministic JUnit 5 and AssertJ edge-case tests.
 3.  **Runnable consumer examples**: `src/test/java/lock14/algebra/<pkg>/<Pkg>ExamplesTest.java` contains end-to-end public API demonstrations demarcated with `// @start region="..."` and `// @end` comments, executed by JUnit and rendered in `package-info.java` Javadocs.
-4.  **JMH benchmarks**: `src/jmh/java/lock14/algebra/benchmarks/<Pkg>Benchmarks.java` measures latency (`ns/op`) and allocation rate (`B/op`), compiled and executed via the isolated `-Pbenchmarks` Maven profile.
+4.  **JMH benchmarks**: `src/test/java/lock14/algebra/<pkg>/<Pkg>Benchmarks.java` measures latency (`ns/op`) and allocation rate (`B/op`) inside the matching domain package under Maven's standard `src/test/java` source tree (never introduce non-standard `src/jmh/` source roots or catch-all `benchmarks` subpackages), executed via the `-Pbenchmarks` Maven profile.
 
 ## Internal section ordering in Java files
 
@@ -61,7 +61,7 @@ Maintain consistent top-to-bottom ordering within `.java` classes:
 
 # Benchmarking conventions
 
-*   **Isolation**: Benchmarks live in `src/jmh/java/lock14/algebra/benchmarks/` under package `lock14.algebra.benchmarks` and consume `lock14.algebra.*` strictly through public exported APIs via the `-Pbenchmarks` profile.
+*   **Standard Maven package locality**: Benchmarks live alongside unit and example tests in `src/test/java/lock14/algebra/<pkg>/<Pkg>Benchmarks.java` under package `lock14.algebra.<pkg>`, exercising public APIs and executed via JMH annotation processing in the `-Pbenchmarks` profile.
 *   **Standard annotations**: Annotate suites with `@BenchmarkMode(Mode.AverageTime)`, `@OutputTimeUnit(TimeUnit.NANOSECONDS)`, and `@State(Scope.Benchmark)`.
 *   **Fixture isolation and dead-code prevention**: Pre-populate algebraic structures, matrices, polynomials, and FFM `Arena` instances inside `@Setup(Level.Trial)` (closing off-heap arenas in `@TearDown(Level.Trial)`), and always return computed results (or feed `Blackhole`) so JIT cannot elide work.
 *   **Allocation tracking**: Run benchmarks with `-prof gc` to inspect `gc.alloc.rate.norm` (`B/op`) alongside latency (`ns/op`).

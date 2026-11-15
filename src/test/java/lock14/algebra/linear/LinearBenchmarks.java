@@ -1,10 +1,6 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.linear;
 
 import java.util.concurrent.TimeUnit;
-import lock14.algebra.linear.RectangularMatrix;
-import lock14.algebra.linear.RrefResult;
-import lock14.algebra.linear.SquareMatrix;
-import lock14.algebra.linear.Vector;
 import lock14.algebra.numbers.Rational;
 import lock14.algebra.numbers.Rationals;
 import org.openjdk.jmh.annotations.Benchmark;

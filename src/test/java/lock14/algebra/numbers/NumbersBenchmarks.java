@@ -1,13 +1,7 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.numbers;
 
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
-import lock14.algebra.numbers.Complex;
-import lock14.algebra.numbers.GaussianIntegers;
-import lock14.algebra.numbers.Quaternion;
-import lock14.algebra.numbers.QuaternionDivisionRing;
-import lock14.algebra.numbers.Rational;
-import lock14.algebra.numbers.Rationals;
 import lock14.algebra.structure.EuclideanDomain;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

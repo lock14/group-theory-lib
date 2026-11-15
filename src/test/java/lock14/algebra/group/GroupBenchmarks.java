@@ -1,15 +1,9 @@
-package lock14.algebra.benchmarks;
+package lock14.algebra.group;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import lock14.algebra.group.Coset;
-import lock14.algebra.group.GroupAction;
-import lock14.algebra.group.Permutation;
-import lock14.algebra.group.QuotientGroup;
-import lock14.algebra.group.Subgroup;
-import lock14.algebra.group.SymmetricGroup;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

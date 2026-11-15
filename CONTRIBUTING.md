@@ -18,7 +18,7 @@ Each domain package (`structure`, `group`, `numbers`, `polynomial`, `quotient`, 
 1.  **Main implementation**: `src/main/java/lock14/algebra/<pkg>/` contains implementation classes and a `package-info.java` overview with JEP 413 `{@snippet}` examples.
 2.  **Law and unit tests**: `src/test/java/lock14/algebra/<pkg>/<Type>Test.java` contains `jqwik` property-based `*Laws` verification and AssertJ edge-case unit tests.
 3.  **Consumer examples**: `src/test/java/lock14/algebra/<pkg>/<Pkg>ExamplesTest.java` contains runnable consumer-perspective examples demarcated with `// @start region="..."` and `// @end`.
-4.  **Microbenchmarks**: `src/jmh/java/lock14/algebra/benchmarks/<Pkg>Benchmarks.java` contains JMH microbenchmarks measuring latency (`ns/op`) and allocation rate (`B/op`).
+4.  **Microbenchmarks**: `src/test/java/lock14/algebra/<pkg>/<Pkg>Benchmarks.java` contains JMH microbenchmarks measuring latency (`ns/op`) and allocation rate (`B/op`) inside the matching domain package.
 
 ## Development setup and workflow
 
