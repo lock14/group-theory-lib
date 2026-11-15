@@ -36,7 +36,7 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Run Enforcer, Checkstyle, Strict Compiler & Javadoc
-        run: ./mvnw --batch-mode --no-transfer-progress clean validate test-compile javadoc:javadoc
+        run: ./mvnw --batch-mode --no-transfer-progress clean validate test-compile javadoc:javadoc -Pbenchmarks
 
   build-and-test:
     name: Test (Java ${{ matrix.java-version }} on ${{ matrix.os }})
