@@ -67,7 +67,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.6.3</version>
+        <version>3.7.0</version>
         <executions>
           <execution>
             <id>enforce-build-and-zero-runtime-deps</id>
@@ -233,7 +233,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.7.0</version>
             <configuration>
               <executable>java</executable>
               <classpathScope>test</classpathScope>
